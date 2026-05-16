@@ -17,6 +17,8 @@ export default function Dashboard({ user, onLogout }: { user: any; onLogout: () 
   const [snippet, setSnippet] = useState('');
   const [copied, setCopied] = useState(false);
   const [tab, setTab] = useState('overview');
+  const [clarityId, setClarityId] = useState('');
+  const [claritySaved, setClaritySaved] = useState(false);
 
   useEffect(() => { if (id) load(); }, [id]);
 
@@ -33,7 +35,7 @@ export default function Dashboard({ user, onLogout }: { user: any; onLogout: () 
     if (dev.ok) setDevices(await dev.json());
     if (eng.ok) setEngagement(await eng.json());
     if (err.ok) setErrors(await err.json());
-    if (proj.ok) setSnippet((await proj.json()).snippet);
+    if (proj.ok) { const d = await proj.json(); setSnippet(d.snippet); setClarityId(d.project?.clarityId || ''); }
   }
 
   function copySnippet() { navigator.clipboard.writeText(snippet); setCopied(true); setTimeout(() => setCopied(false), 2000); }
@@ -167,35 +169,60 @@ export default function Dashboard({ user, onLogout }: { user: any; onLogout: () 
           <div>
             <div className="bg-forest rounded-2xl p-6 mb-6">
               <h3 className="text-xl font-bold text-white mb-2">🔥 Microsoft Clarity — Free Heatmaps & Session Recordings</h3>
-              <p className="text-white/70 text-sm">Clarity gives you heatmaps, session recordings, and scroll maps — completely free. Here's how to set it up:</p>
+              <p className="text-white/70 text-sm">Clarity gives you heatmaps, session recordings, and scroll maps — completely free.</p>
             </div>
+
+            {/* Save Clarity ID + Open Dashboard */}
+            <div className="bg-white rounded-2xl p-6 border border-meadow-200 mb-6">
+              <h4 className="font-semibold text-forest mb-3">Link your Clarity project</h4>
+              <p className="text-sm text-forest-muted mb-4">Paste your Clarity Project ID to get a direct link to your dashboard here.</p>
+              <div className="flex gap-3 items-end flex-wrap">
+                <div className="flex-1 min-w-[200px]">
+                  <label className="block text-xs font-semibold text-forest-muted uppercase tracking-wide mb-1.5">Clarity Project ID</label>
+                  <input className="w-full px-4 py-2.5 rounded-lg border border-meadow-200 bg-meadow-50 text-sm focus:outline-none focus:border-meadow-500" placeholder="e.g. abc123xyz" value={clarityId} onChange={e => { setClarityId(e.target.value); setClaritySaved(false); }} />
+                </div>
+                <button onClick={async () => { await fetch(`/api/projects/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` }, body: JSON.stringify({ clarityId }) }); setClaritySaved(true); }} className="bg-meadow-600 hover:bg-meadow-700 text-white font-medium px-5 py-2.5 rounded-full text-sm transition-colors">
+                  {claritySaved ? '✓ Saved' : 'Save'}
+                </button>
+              </div>
+              {clarityId && (
+                <a href={`https://clarity.microsoft.com/projects/view/${clarityId}/dashboard`} target="_blank" rel="noopener" className="mt-4 inline-flex items-center gap-2 bg-forest hover:bg-forest-light text-white font-medium px-5 py-2.5 rounded-full text-sm transition-colors">
+                  <Zap className="w-4 h-4" /> Open Clarity Dashboard →
+                </a>
+              )}
+            </div>
+
+            {/* Setup Guide */}
             <div className="bg-white rounded-2xl p-6 border border-meadow-200 space-y-6">
+              <h4 className="font-semibold text-forest">Setup Guide (if you haven't already)</h4>
               <div>
                 <h4 className="font-semibold text-forest mb-2 flex items-center gap-2"><span className="w-6 h-6 rounded-full bg-meadow-100 text-meadow-700 text-xs font-bold flex items-center justify-center">1</span> Create a Clarity account</h4>
-                <p className="text-sm text-forest-muted ml-8">Go to <a href="https://clarity.microsoft.com" target="_blank" rel="noopener" className="text-meadow-600 font-medium underline">clarity.microsoft.com</a> → Sign up with Microsoft/Google/Facebook.</p>
+                <p className="text-sm text-forest-muted ml-8">Go to <a href="https://clarity.microsoft.com" target="_blank" rel="noopener" className="text-meadow-600 font-medium underline">clarity.microsoft.com</a> → Sign up free.</p>
               </div>
               <div>
-                <h4 className="font-semibold text-forest mb-2 flex items-center gap-2"><span className="w-6 h-6 rounded-full bg-meadow-100 text-meadow-700 text-xs font-bold flex items-center justify-center">2</span> Create a new project</h4>
-                <p className="text-sm text-forest-muted ml-8">Click "Add new project" → Enter your site name and URL → Click "Create".</p>
+                <h4 className="font-semibold text-forest mb-2 flex items-center gap-2"><span className="w-6 h-6 rounded-full bg-meadow-100 text-meadow-700 text-xs font-bold flex items-center justify-center">2</span> Create a project & copy the ID</h4>
+                <p className="text-sm text-forest-muted ml-8">After creating a project, the ID is in the URL: <code className="bg-meadow-50 px-1.5 py-0.5 rounded text-xs">clarity.microsoft.com/projects/view/<strong>YOUR_ID</strong>/...</code></p>
               </div>
               <div>
-                <h4 className="font-semibold text-forest mb-2 flex items-center gap-2"><span className="w-6 h-6 rounded-full bg-meadow-100 text-meadow-700 text-xs font-bold flex items-center justify-center">3</span> Copy the tracking code</h4>
-                <p className="text-sm text-forest-muted ml-8">Clarity gives you a script like this — paste it in your site's {'<head>'}:</p>
-                <div className="ml-8 mt-2 bg-forest/95 rounded-xl p-4 font-mono text-xs text-meadow-300 overflow-x-auto">
-                  {`<script type="text/javascript">\n  (function(c,l,a,r,i,t,y){\n    c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};\n    t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;\n    y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);\n  })(window,document,"clarity","script","YOUR_CLARITY_ID");\n</script>`}
+                <h4 className="font-semibold text-forest mb-2 flex items-center gap-2"><span className="w-6 h-6 rounded-full bg-meadow-100 text-meadow-700 text-xs font-bold flex items-center justify-center">3</span> Add Clarity script to your site</h4>
+                <div className="ml-8 mt-2 bg-forest/95 rounded-xl p-4 font-mono text-xs text-meadow-300 overflow-x-auto whitespace-pre">
+{`<script type="text/javascript">
+  (function(c,l,a,r,i,t,y){
+    c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+    t=l.createElement(r);t.async=1;
+    t.src="https://www.clarity.ms/tag/"+i;
+    y=l.getElementsByTagName(r)[0];
+    y.parentNode.insertBefore(t,y);
+  })(window,document,"clarity","script","YOUR_ID");
+</script>`}
                 </div>
               </div>
               <div>
-                <h4 className="font-semibold text-forest mb-2 flex items-center gap-2"><span className="w-6 h-6 rounded-full bg-meadow-100 text-meadow-700 text-xs font-bold flex items-center justify-center">4</span> You get (for free)</h4>
-                <div className="ml-8 grid sm:grid-cols-2 gap-3">
-                  <div className="bg-meadow-50 rounded-xl p-3 border border-meadow-200"><span className="text-sm font-medium text-forest">🖱️ Heatmaps</span><p className="text-xs text-forest-muted mt-1">See where users click, scroll, and move</p></div>
-                  <div className="bg-meadow-50 rounded-xl p-3 border border-meadow-200"><span className="text-sm font-medium text-forest">🎬 Session Recordings</span><p className="text-xs text-forest-muted mt-1">Watch real user sessions frame by frame</p></div>
-                  <div className="bg-meadow-50 rounded-xl p-3 border border-meadow-200"><span className="text-sm font-medium text-forest">📊 Scroll Maps</span><p className="text-xs text-forest-muted mt-1">See how far users scroll on each page</p></div>
-                  <div className="bg-meadow-50 rounded-xl p-3 border border-meadow-200"><span className="text-sm font-medium text-forest">⚡ Rage Click Detection</span><p className="text-xs text-forest-muted mt-1">Identify frustrated users automatically</p></div>
-                </div>
+                <h4 className="font-semibold text-forest mb-2 flex items-center gap-2"><span className="w-6 h-6 rounded-full bg-meadow-100 text-meadow-700 text-xs font-bold flex items-center justify-center">4</span> Paste the ID above & save</h4>
+                <p className="text-sm text-forest-muted ml-8">Then click "Open Clarity Dashboard" anytime to view heatmaps and recordings.</p>
               </div>
               <div className="bg-meadow-50 rounded-xl p-4 border border-meadow-200">
-                <p className="text-sm text-forest"><strong>💡 Pro tip:</strong> Use Pulse for quantitative data (numbers, trends, funnels) and Clarity for qualitative data (watching WHY users behave a certain way). Together they give you the full picture.</p>
+                <p className="text-sm text-forest"><strong>💡 You get for free:</strong> Heatmaps, Session Recordings, Scroll Maps, Rage Click Detection, Dead Click Detection, Quick-back Detection.</p>
               </div>
             </div>
           </div>

@@ -21,6 +21,7 @@ export const projects = pgTable('projects', {
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   name: varchar('name', { length: 100 }).notNull(),
   domain: varchar('domain', { length: 255 }).notNull(),
+  clarityId: varchar('clarity_id', { length: 20 }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   isActive: boolean('is_active').default(true).notNull(),
 });

@@ -23,6 +23,7 @@ export async function initDB() {
       user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       name VARCHAR(100) NOT NULL,
       domain VARCHAR(255) NOT NULL,
+      clarity_id VARCHAR(20),
       is_active BOOLEAN DEFAULT TRUE NOT NULL,
       created_at TIMESTAMP DEFAULT NOW() NOT NULL
     );

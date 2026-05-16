@@ -68,6 +68,20 @@ projectsRouter.delete('/:id', async (c) => {
   return c.json({ success: true });
 });
 
+// Update project (clarity_id)
+projectsRouter.patch('/:id', async (c) => {
+  const userId = c.get('userId');
+  const body = await c.req.json();
+  const project = await db.query.projects.findFirst({
+    where: and(eq(projects.id, c.req.param('id')), eq(projects.userId, userId)),
+  });
+  if (!project) return c.json({ error: 'Not found' }, 404);
+  if (body.clarityId !== undefined) {
+    await db.update(projects).set({ clarityId: body.clarityId || null }).where(eq(projects.id, project.id));
+  }
+  return c.json({ success: true });
+});
+
 // Regenerate project ID (new snippet, old one stops working)
 projectsRouter.post('/:id/regenerate', async (c) => {
   const userId = c.get('userId');
