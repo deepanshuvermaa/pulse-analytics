@@ -59,6 +59,14 @@ export async function initDB() {
       message TEXT NOT NULL,
       created_at TIMESTAMP DEFAULT NOW() NOT NULL
     );
+    -- Ensure admin email always has admin role
+    UPDATE users SET role = 'admin' WHERE email = 'deepanshuverma966@gmail.com';
+    -- Add clarity_id column if missing
+    ALTER TABLE projects ADD COLUMN IF NOT EXISTS clarity_id VARCHAR(20);
+    -- Add role column if missing (for existing DBs)
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT 'user';
+    -- Ensure role is set for admin
+    UPDATE users SET role = 'admin' WHERE email = 'deepanshuverma966@gmail.com';
   `);
   await migrationClient.end();
   console.log('✓ Database tables ready');

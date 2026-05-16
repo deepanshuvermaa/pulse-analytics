@@ -13,9 +13,17 @@ export default function App() {
 
   useEffect(() => {
     const token = api.getToken();
-    const stored = localStorage.getItem('pulse_user');
-    if (token && stored) setUser(JSON.parse(stored));
-    setLoading(false);
+    if (token) {
+      // Always fetch fresh user data from server
+      fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data?.user) { setUser(data.user); localStorage.setItem('pulse_user', JSON.stringify(data.user)); }
+          else { api.clearTokens(); localStorage.removeItem('pulse_user'); }
+          setLoading(false);
+        })
+        .catch(() => setLoading(false));
+    } else { setLoading(false); }
   }, []);
 
   function handleAuth(userData: any) {

@@ -103,6 +103,19 @@ auth.post('/refresh', async (c) => {
   }
 });
 
+// Get current user (fresh from DB)
+auth.get('/me', async (c) => {
+  const header = c.req.header('Authorization');
+  if (!header?.startsWith('Bearer ')) return c.json({ error: 'Unauthorized' }, 401);
+  try {
+    const { verifyAccessToken } = await import('../lib/auth.js');
+    const userId = await verifyAccessToken(header.slice(7));
+    const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
+    if (!user) return c.json({ error: 'Not found' }, 404);
+    return c.json({ user: { id: user.id, email: user.email, name: user.name, role: user.role } });
+  } catch { return c.json({ error: 'Invalid token' }, 401); }
+});
+
 // Logout
 auth.post('/logout', async (c) => {
   const { refreshToken: token } = await c.req.json();
