@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api } from '../api';
-import { ArrowLeft, Copy, Check, Users, Eye, MousePointer, Activity, Sparkles, LogOut, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Copy, Check, Users, Eye, MousePointer, Activity, Sparkles, LogOut, RefreshCw, AlertTriangle, Zap, MousePointerClick, UserCheck } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 export default function Dashboard({ user, onLogout }: { user: any; onLogout: () => void }) {
@@ -12,6 +12,8 @@ export default function Dashboard({ user, onLogout }: { user: any; onLogout: () 
   const [pages, setPages] = useState<any[]>([]);
   const [referrers, setReferrers] = useState<any[]>([]);
   const [devices, setDevices] = useState<any>(null);
+  const [engagement, setEngagement] = useState<any>(null);
+  const [errors, setErrors] = useState<any>(null);
   const [snippet, setSnippet] = useState('');
   const [copied, setCopied] = useState(false);
   const [tab, setTab] = useState('overview');
@@ -19,15 +21,18 @@ export default function Dashboard({ user, onLogout }: { user: any; onLogout: () 
   useEffect(() => { if (id) load(); }, [id]);
 
   async function load() {
-    const [ov, pv, pg, ref, dev, proj] = await Promise.all([
+    const [ov, pv, pg, ref, dev, eng, err, proj] = await Promise.all([
       api.getOverview(id!), api.getPageviews(id!), api.getPages(id!),
-      api.getReferrers(id!), api.getDevices(id!), api.getProject(id!),
+      api.getReferrers(id!), api.getDevices(id!), api.getEngagement(id!),
+      api.getErrors(id!), api.getProject(id!),
     ]);
     if (ov.ok) setOverview(await ov.json());
     if (pv.ok) setPageviews((await pv.json()).data);
     if (pg.ok) setPages((await pg.json()).data);
     if (ref.ok) setReferrers((await ref.json()).data);
     if (dev.ok) setDevices(await dev.json());
+    if (eng.ok) setEngagement(await eng.json());
+    if (err.ok) setErrors(await err.json());
     if (proj.ok) setSnippet((await proj.json()).snippet);
   }
 
@@ -35,9 +40,12 @@ export default function Dashboard({ user, onLogout }: { user: any; onLogout: () 
 
   const tabs = [
     { key: 'overview', label: 'Overview' },
+    { key: 'engagement', label: 'Engagement' },
     { key: 'pages', label: 'Pages' },
     { key: 'referrers', label: 'Referrers' },
     { key: 'devices', label: 'Devices' },
+    { key: 'errors', label: 'Errors' },
+    { key: 'clarity', label: 'Clarity' },
     { key: 'snippet', label: 'Snippet' },
   ];
 
@@ -87,6 +95,109 @@ export default function Dashboard({ user, onLogout }: { user: any; onLogout: () 
                 </ResponsiveContainer>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Engagement */}
+        {tab === 'engagement' && engagement && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <StatCard icon={Users} label="DAU (Today)" value={engagement.dau} />
+              <StatCard icon={Users} label="WAU (7 days)" value={engagement.wau} />
+              <StatCard icon={Users} label="MAU (30 days)" value={engagement.mau} />
+              <StatCard icon={UserCheck} label="Returning Visitors" value={engagement.returningVisitors} accent />
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="bg-white rounded-2xl p-5 border border-meadow-200">
+                <div className="text-sm text-forest-muted mb-1">DAU/WAU Ratio</div>
+                <div className="text-2xl font-bold text-forest">{engagement.dauWauRatio}%</div>
+                <div className="text-xs text-forest-muted mt-1">Higher = stickier product (20%+ is good)</div>
+              </div>
+              <div className="bg-red-50 rounded-2xl p-5 border border-red-200">
+                <MousePointerClick className="w-5 h-5 text-red-500 mb-2" />
+                <div className="text-sm text-red-700 mb-1">Rage Clicks (7d)</div>
+                <div className="text-2xl font-bold text-red-700">{engagement.rageClicks}</div>
+                <div className="text-xs text-red-500 mt-1">Users frustrated — clicking repeatedly</div>
+              </div>
+              <div className="bg-amber-50 rounded-2xl p-5 border border-amber-200">
+                <MousePointer className="w-5 h-5 text-amber-600 mb-2" />
+                <div className="text-sm text-amber-700 mb-1">Dead Clicks (7d)</div>
+                <div className="text-2xl font-bold text-amber-700">{engagement.deadClicks}</div>
+                <div className="text-xs text-amber-500 mt-1">Clicks on non-interactive elements</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Errors */}
+        {tab === 'errors' && errors && (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-forest">JS Errors (Last 7 days)</h3>
+              <span className="bg-red-100 text-red-700 text-xs font-bold px-3 py-1 rounded-full">{errors.total} total</span>
+            </div>
+            <div className="bg-white rounded-2xl border border-meadow-200 overflow-hidden">
+              {errors.errors.length === 0 ? (
+                <p className="px-5 py-8 text-center text-sm text-forest-muted">No errors captured 🎉</p>
+              ) : (
+                <div className="divide-y divide-meadow-100">
+                  {errors.errors.map((e: any) => (
+                    <div key={e.id} className="px-5 py-4">
+                      <div className="flex items-start gap-3">
+                        <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-forest truncate">{e.payload?.message || 'Unknown error'}</p>
+                          <div className="flex gap-3 mt-1 text-xs text-forest-muted">
+                            <span>{e.path}</span>
+                            {e.payload?.source && <span>{e.payload.source}:{e.payload.line}</span>}
+                            <span>{new Date(e.timestamp).toLocaleString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Clarity Integration */}
+        {tab === 'clarity' && (
+          <div>
+            <div className="bg-forest rounded-2xl p-6 mb-6">
+              <h3 className="text-xl font-bold text-white mb-2">🔥 Microsoft Clarity — Free Heatmaps & Session Recordings</h3>
+              <p className="text-white/70 text-sm">Clarity gives you heatmaps, session recordings, and scroll maps — completely free. Here's how to set it up:</p>
+            </div>
+            <div className="bg-white rounded-2xl p-6 border border-meadow-200 space-y-6">
+              <div>
+                <h4 className="font-semibold text-forest mb-2 flex items-center gap-2"><span className="w-6 h-6 rounded-full bg-meadow-100 text-meadow-700 text-xs font-bold flex items-center justify-center">1</span> Create a Clarity account</h4>
+                <p className="text-sm text-forest-muted ml-8">Go to <a href="https://clarity.microsoft.com" target="_blank" rel="noopener" className="text-meadow-600 font-medium underline">clarity.microsoft.com</a> → Sign up with Microsoft/Google/Facebook.</p>
+              </div>
+              <div>
+                <h4 className="font-semibold text-forest mb-2 flex items-center gap-2"><span className="w-6 h-6 rounded-full bg-meadow-100 text-meadow-700 text-xs font-bold flex items-center justify-center">2</span> Create a new project</h4>
+                <p className="text-sm text-forest-muted ml-8">Click "Add new project" → Enter your site name and URL → Click "Create".</p>
+              </div>
+              <div>
+                <h4 className="font-semibold text-forest mb-2 flex items-center gap-2"><span className="w-6 h-6 rounded-full bg-meadow-100 text-meadow-700 text-xs font-bold flex items-center justify-center">3</span> Copy the tracking code</h4>
+                <p className="text-sm text-forest-muted ml-8">Clarity gives you a script like this — paste it in your site's {'<head>'}:</p>
+                <div className="ml-8 mt-2 bg-forest/95 rounded-xl p-4 font-mono text-xs text-meadow-300 overflow-x-auto">
+                  {`<script type="text/javascript">\n  (function(c,l,a,r,i,t,y){\n    c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};\n    t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;\n    y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);\n  })(window,document,"clarity","script","YOUR_CLARITY_ID");\n</script>`}
+                </div>
+              </div>
+              <div>
+                <h4 className="font-semibold text-forest mb-2 flex items-center gap-2"><span className="w-6 h-6 rounded-full bg-meadow-100 text-meadow-700 text-xs font-bold flex items-center justify-center">4</span> You get (for free)</h4>
+                <div className="ml-8 grid sm:grid-cols-2 gap-3">
+                  <div className="bg-meadow-50 rounded-xl p-3 border border-meadow-200"><span className="text-sm font-medium text-forest">🖱️ Heatmaps</span><p className="text-xs text-forest-muted mt-1">See where users click, scroll, and move</p></div>
+                  <div className="bg-meadow-50 rounded-xl p-3 border border-meadow-200"><span className="text-sm font-medium text-forest">🎬 Session Recordings</span><p className="text-xs text-forest-muted mt-1">Watch real user sessions frame by frame</p></div>
+                  <div className="bg-meadow-50 rounded-xl p-3 border border-meadow-200"><span className="text-sm font-medium text-forest">📊 Scroll Maps</span><p className="text-xs text-forest-muted mt-1">See how far users scroll on each page</p></div>
+                  <div className="bg-meadow-50 rounded-xl p-3 border border-meadow-200"><span className="text-sm font-medium text-forest">⚡ Rage Click Detection</span><p className="text-xs text-forest-muted mt-1">Identify frustrated users automatically</p></div>
+                </div>
+              </div>
+              <div className="bg-meadow-50 rounded-xl p-4 border border-meadow-200">
+                <p className="text-sm text-forest"><strong>💡 Pro tip:</strong> Use Pulse for quantitative data (numbers, trends, funnels) and Clarity for qualitative data (watching WHY users behave a certain way). Together they give you the full picture.</p>
+              </div>
+            </div>
           </div>
         )}
 

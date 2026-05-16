@@ -11,8 +11,8 @@ const collect = new Hono();
 const eventSchema = z.object({
   project_id: z.string().min(1).optional(),
   p: z.string().min(1).optional(),
-  type: z.enum(['pageview', 'click', 'scroll', 'session_end', 'custom']).optional(),
-  t: z.enum(['pageview', 'click', 'scroll', 'session_end', 'custom']).optional(),
+  type: z.enum(['pageview', 'click', 'scroll', 'session_end', 'custom', 'rage_click', 'dead_click', 'form_submit', 'form_focus', 'js_error']).optional(),
+  t: z.enum(['pageview', 'click', 'scroll', 'session_end', 'custom', 'rage_click', 'dead_click', 'form_submit', 'form_focus', 'js_error']).optional(),
   visitor_id: z.string().min(1).optional(),
   v: z.string().min(1).optional(),
   session_id: z.string().min(1).optional(),
