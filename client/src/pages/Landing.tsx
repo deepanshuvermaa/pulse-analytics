@@ -3,7 +3,7 @@ import { BarChart3, Zap, Shield, Globe, Code, Users, ArrowRight, Play, Sparkles,
 import { useState } from 'react';
 import BoomerangVideoBg from '../components/BoomerangVideoBg';
 
-const VIDEO_URL = 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260511_131941_d136af49-e243-493a-be14-6ff3f24e09e6.mp4';
+const VIDEO_URL = '/pulsehero.mp4';
 
 export default function Landing() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -13,25 +13,25 @@ export default function Landing() {
       {/* HERO */}
       <section className="relative w-full min-h-screen overflow-hidden">
         <BoomerangVideoBg src={VIDEO_URL} className="absolute inset-0 w-full h-full" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/30" />
+        <div className="absolute inset-0 bg-black/60" />
 
         {/* Nav */}
         <nav className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between px-4 sm:px-6 md:px-10 py-4 sm:py-6">
-          <span className="text-lg sm:text-xl font-semibold tracking-tight text-forest">
+          <span className="text-lg sm:text-xl font-semibold tracking-tight text-white">
             Pulse<sup className="text-xs font-medium">™</sup>
           </span>
-          <div className="hidden lg:flex items-center gap-1 bg-white/70 backdrop-blur-md rounded-full pl-6 pr-1 py-1 shadow-sm border border-white/60">
-            <a href="#features" className="text-sm px-3 py-2 font-medium text-forest-muted hover:text-forest">Features</a>
-            <a href="#how" className="text-sm px-3 py-2 font-medium text-forest-muted hover:text-forest">How it Works</a>
-            <a href="#pricing" className="text-sm px-3 py-2 font-medium text-forest-muted hover:text-forest">Pricing</a>
-            <Link to="/signup" className="ml-2 bg-forest hover:bg-forest-light text-white text-sm font-medium px-5 py-2.5 rounded-full transition-colors">
+          <div className="hidden lg:flex items-center gap-1 bg-white/10 backdrop-blur-md rounded-full pl-6 pr-1 py-1 border border-white/20">
+            <a href="#features" className="text-sm px-3 py-2 font-medium text-white/80 hover:text-white">Features</a>
+            <a href="#how" className="text-sm px-3 py-2 font-medium text-white/80 hover:text-white">How it Works</a>
+            <a href="#pricing" className="text-sm px-3 py-2 font-medium text-white/80 hover:text-white">Pricing</a>
+            <Link to="/signup" className="ml-2 bg-white hover:bg-white/90 text-forest text-sm font-medium px-5 py-2.5 rounded-full transition-colors">
               Get Started
             </Link>
           </div>
-          <div className="flex items-center gap-4 text-forest">
+          <div className="flex items-center gap-4 text-white">
             <Link to="/login" className="hidden sm:flex items-center gap-2 text-sm font-medium hover:opacity-80">Sign In</Link>
-            <Link to="/signup" className="hidden sm:flex items-center gap-2 text-sm font-medium bg-forest text-white px-4 py-2 rounded-full hover:bg-forest-light">Sign Up</Link>
-            <button onClick={() => setMenuOpen(!menuOpen)} className="lg:hidden w-10 h-10 rounded-full bg-white/70 backdrop-blur-md border border-white/60 flex items-center justify-center">
+            <Link to="/signup" className="hidden sm:flex items-center gap-2 text-sm font-medium bg-white text-forest px-4 py-2 rounded-full hover:bg-white/90">Sign Up</Link>
+            <button onClick={() => setMenuOpen(!menuOpen)} className="lg:hidden w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white">
               {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
@@ -49,21 +49,21 @@ export default function Landing() {
 
         {/* Hero content */}
         <div className="relative z-10 flex flex-col items-center text-center pt-28 sm:pt-36 md:pt-40 px-4">
-          <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm rounded-full px-4 py-1.5 mb-6 border border-meadow-200">
-            <Sparkles className="w-4 h-4 text-meadow-600" />
-            <span className="text-sm font-medium text-forest">Privacy-first analytics for builders</span>
+          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-1.5 mb-6 border border-white/20">
+            <Sparkles className="w-4 h-4 text-meadow-300" />
+            <span className="text-sm font-medium text-white">Privacy-first analytics for builders</span>
           </div>
-          <h1 className="font-display font-normal leading-[0.95] text-forest text-[2rem] sm:text-4xl md:text-5xl lg:text-[4.75rem] max-w-5xl" style={{ letterSpacing: '-0.035em' }}>
-            Know your users{' '}<span className="text-sage">without compromising{' '}<br className="hidden sm:block" />their privacy</span>
+          <h1 className="font-display font-normal leading-[0.95] text-white text-[2rem] sm:text-4xl md:text-5xl lg:text-[4.75rem] max-w-5xl" style={{ letterSpacing: '-0.035em' }}>
+            Know your users{' '}<span className="text-meadow-300">without compromising{' '}<br className="hidden sm:block" />their privacy</span>
           </h1>
-          <p className="mt-6 sm:mt-8 text-forest-muted text-sm sm:text-base md:text-lg leading-relaxed max-w-lg">
+          <p className="mt-6 sm:mt-8 text-white/80 text-sm sm:text-base md:text-lg leading-relaxed max-w-lg">
             Drop one script tag. Get pageviews, visitors, scroll depth, clicks, and real-time data. No cookies. No consent banners. No complexity.
           </p>
           <div className="mt-8 flex items-center gap-4 flex-wrap justify-center">
-            <Link to="/signup" className="bg-forest hover:bg-forest-light text-white font-semibold px-7 py-3.5 rounded-full transition-colors shadow-lg shadow-forest/20">
+            <Link to="/signup" className="bg-white hover:bg-white/90 text-forest font-semibold px-7 py-3.5 rounded-full transition-colors shadow-lg">
               Start Free →
             </Link>
-            <a href="#how" className="text-forest font-medium flex items-center gap-2 hover:opacity-80">
+            <a href="#how" className="text-white font-medium flex items-center gap-2 hover:opacity-80">
               <Play className="w-4 h-4" /> See how it works
             </a>
           </div>

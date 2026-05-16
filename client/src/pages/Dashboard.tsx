@@ -127,7 +127,22 @@ export default function Dashboard({ user, onLogout }: { user: any; onLogout: () 
           <div>
             <div className="bg-forest rounded-2xl p-6 mb-6">
               <h3 className="text-xl font-bold text-white mb-2">Your Tracking Snippet</h3>
-              <p className="text-white/70 text-sm">Add this to your website's &lt;head&gt; or before &lt;/body&gt;</p>
+              <p className="text-white/70 text-sm">Add this to your website to start tracking automatically.</p>
+            </div>
+            <div className="bg-white rounded-2xl p-6 border border-meadow-200 mb-4">
+              <h4 className="font-semibold text-forest mb-3">Where to put it:</h4>
+              <div className="bg-forest/95 rounded-xl p-4 font-mono text-xs text-meadow-300 overflow-x-auto leading-relaxed">
+                <span className="text-white/40">{'<!DOCTYPE html>'}</span>{'\n'}
+                <span className="text-white/40">{'<html>'}</span>{'\n'}
+                <span className="text-white/40">{'<head>'}</span>{'\n'}
+                {'  '}<span className="text-white/40">{'<title>Your Site</title>'}</span>{'\n'}
+                {'  '}<span className="text-meadow-300 font-bold bg-meadow-900/50 px-1 rounded">{'<!-- ✅ PASTE HERE (inside <head>) -->'}</span>{'\n'}
+                {'  '}<span className="text-white">{snippet}</span>{'\n'}
+                <span className="text-white/40">{'</head>'}</span>{'\n'}
+                <span className="text-white/40">{'<body>...</body>'}</span>{'\n'}
+                <span className="text-white/40">{'</html>'}</span>
+              </div>
+              <p className="text-xs text-forest-muted mt-3">Works in: React, Next.js, Vue, Svelte, HTML, WordPress — any site that renders HTML.</p>
             </div>
             <div className="bg-forest/95 rounded-2xl p-5 font-mono text-sm text-meadow-300 overflow-x-auto">{snippet}</div>
             <button onClick={copySnippet} className="mt-4 bg-meadow-600 hover:bg-meadow-700 text-white font-medium px-5 py-2.5 rounded-full transition-colors flex items-center gap-2 text-sm">

@@ -9,13 +9,20 @@ import UAParser from 'ua-parser-js';
 const collect = new Hono();
 
 const eventSchema = z.object({
-  project_id: z.string().min(1),
-  type: z.enum(['pageview', 'click', 'scroll', 'session_end', 'custom']),
-  visitor_id: z.string().min(1),
-  session_id: z.string().min(1),
+  project_id: z.string().min(1).optional(),
+  p: z.string().min(1).optional(),
+  type: z.enum(['pageview', 'click', 'scroll', 'session_end', 'custom']).optional(),
+  t: z.enum(['pageview', 'click', 'scroll', 'session_end', 'custom']).optional(),
+  visitor_id: z.string().min(1).optional(),
+  v: z.string().min(1).optional(),
+  session_id: z.string().min(1).optional(),
+  s: z.string().min(1).optional(),
   path: z.string().optional(),
+  u: z.string().optional(),
   referrer: z.string().nullable().optional(),
+  r: z.string().nullable().optional(),
   timestamp: z.string().optional(),
+  ts: z.string().optional(),
   payload: z.any().optional(),
 });
 
@@ -50,7 +57,20 @@ collect.post('/', async (c) => {
   const body = eventSchema.safeParse(await c.req.json());
   if (!body.success) return c.json({ error: 'Invalid event' }, 400);
 
-  const data = body.data;
+  const raw = body.data;
+  // Normalize obfuscated field names
+  const data = {
+    project_id: raw.project_id || raw.p || '',
+    type: raw.type || raw.t || 'pageview',
+    visitor_id: raw.visitor_id || raw.v || '',
+    session_id: raw.session_id || raw.s || '',
+    path: raw.path || raw.u,
+    referrer: raw.referrer || raw.r,
+    timestamp: raw.timestamp || raw.ts,
+    payload: raw.payload,
+  };
+
+  if (!data.project_id || !data.visitor_id || !data.session_id) return c.json({ error: 'Invalid event' }, 400);
 
   // Rate limit: 100 events per visitor per minute
   const rateKey = `rl:${data.project_id}:${data.visitor_id}`;

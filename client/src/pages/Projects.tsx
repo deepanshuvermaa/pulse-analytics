@@ -1,16 +1,20 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api';
-import { Plus, Sparkles, LogOut, FolderOpen, Shield } from 'lucide-react';
+import { Plus, Sparkles, LogOut, FolderOpen, Shield, X, Code, BarChart3, Zap } from 'lucide-react';
 
 export default function Projects({ user, onLogout }: { user: any; onLogout: () => void }) {
   const [projects, setProjects] = useState<any[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [name, setName] = useState('');
   const [domain, setDomain] = useState('');
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    if (!localStorage.getItem('pulse_onboarded')) setShowOnboarding(true);
+  }, []);
   async function load() { const r = await api.getProjects(); if (r.ok) setProjects((await r.json()).projects); }
 
   async function handleCreate(e: React.FormEvent) {
@@ -76,6 +80,34 @@ export default function Projects({ user, onLogout }: { user: any; onLogout: () =
                 <p className="text-xs text-meadow-400 font-mono mt-3">{p.id}</p>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Onboarding Modal */}
+        {showOnboarding && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-2xl p-8 max-w-md w-full relative shadow-2xl">
+              <button onClick={() => { setShowOnboarding(false); localStorage.setItem('pulse_onboarded', '1'); }} className="absolute top-4 right-4 text-forest-muted hover:text-forest"><X className="w-5 h-5" /></button>
+              <h2 className="text-2xl font-bold text-forest mb-2">Welcome to Pulse! 🎉</h2>
+              <p className="text-sm text-forest-muted mb-6">Here's how to get started in 3 simple steps:</p>
+              <div className="space-y-4">
+                <div className="flex gap-3">
+                  <div className="w-8 h-8 rounded-full bg-meadow-100 flex items-center justify-center flex-shrink-0"><Plus className="w-4 h-4 text-meadow-700" /></div>
+                  <div><h4 className="font-semibold text-forest text-sm">1. Add a project</h4><p className="text-xs text-forest-muted">Click "Add Project" and enter your site name + domain.</p></div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="w-8 h-8 rounded-full bg-meadow-100 flex items-center justify-center flex-shrink-0"><Code className="w-4 h-4 text-meadow-700" /></div>
+                  <div><h4 className="font-semibold text-forest text-sm">2. Copy the snippet</h4><p className="text-xs text-forest-muted">Go to your project → Snippet tab → paste the script in your site's {'<head>'}.</p></div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="w-8 h-8 rounded-full bg-meadow-100 flex items-center justify-center flex-shrink-0"><BarChart3 className="w-4 h-4 text-meadow-700" /></div>
+                  <div><h4 className="font-semibold text-forest text-sm">3. Watch data flow</h4><p className="text-xs text-forest-muted">Visit your site once — data appears in your dashboard within seconds.</p></div>
+                </div>
+              </div>
+              <button onClick={() => { setShowOnboarding(false); localStorage.setItem('pulse_onboarded', '1'); }} className="mt-6 w-full bg-forest hover:bg-forest-light text-white font-semibold py-3 rounded-full transition-colors">
+                Got it, let's go!
+              </button>
+            </div>
           </div>
         )}
       </div>

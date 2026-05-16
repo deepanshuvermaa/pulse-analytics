@@ -24,14 +24,17 @@ export default function Auth({ mode, onAuth }: { mode: 'login' | 'signup'; onAut
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-meadow-50 px-4">
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden px-4">
+      {/* Video background */}
+      <video autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover"><source src="/pulsehero.mp4" type="video/mp4" /></video>
+      <div className="absolute inset-0 bg-black/60" />
+      <div className="w-full max-w-sm relative z-10">
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 text-xl font-semibold text-forest">
-            <Sparkles className="w-5 h-5 text-meadow-600" /> Pulse Analytics
+          <Link to="/" className="inline-flex items-center gap-2 text-xl font-semibold text-white">
+            <Sparkles className="w-5 h-5 text-meadow-300" /> Pulse Analytics
           </Link>
         </div>
-        <div className="bg-white rounded-2xl p-8 shadow-sm border border-meadow-200">
+        <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-8 shadow-2xl border border-white/20">
           <h2 className="text-2xl font-bold text-forest mb-1">{mode === 'login' ? 'Welcome back' : 'Create account'}</h2>
           <p className="text-sm text-forest-muted mb-6">{mode === 'login' ? 'Sign in to your dashboard' : 'Start tracking in seconds'}</p>
           <form onSubmit={handleSubmit} className="space-y-4">
