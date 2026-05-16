@@ -1,9 +1,6 @@
 import { Link } from 'react-router-dom';
 import { BarChart3, Zap, Shield, Globe, Code, Users, ArrowRight, Play, Sparkles, Menu, X } from 'lucide-react';
 import { useState } from 'react';
-import BoomerangVideoBg from '../components/BoomerangVideoBg';
-
-const VIDEO_URL = '/pulsehero.mp4';
 
 export default function Landing() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -12,7 +9,7 @@ export default function Landing() {
     <div className="font-body">
       {/* HERO */}
       <section className="relative w-full min-h-screen overflow-hidden">
-        <BoomerangVideoBg src={VIDEO_URL} className="absolute inset-0 w-full h-full" />
+        <video autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover"><source src="/pulsehero.mp4" type="video/mp4" /></video>
         <div className="absolute inset-0 bg-black/60" />
 
         {/* Nav */}

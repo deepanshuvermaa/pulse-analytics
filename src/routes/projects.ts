@@ -68,4 +68,21 @@ projectsRouter.delete('/:id', async (c) => {
   return c.json({ success: true });
 });
 
+// Regenerate project ID (new snippet, old one stops working)
+projectsRouter.post('/:id/regenerate', async (c) => {
+  const userId = c.get('userId');
+  const old = await db.query.projects.findFirst({
+    where: and(eq(projects.id, c.req.param('id')), eq(projects.userId, userId)),
+  });
+  if (!old) return c.json({ error: 'Not found' }, 404);
+
+  const newId = nanoid(12);
+  // Create new project with same details, delete old
+  await db.insert(projects).values({ id: newId, userId, name: old.name, domain: old.domain });
+  await db.delete(projects).where(eq(projects.id, old.id));
+
+  const baseUrl = new URL(c.req.url).origin;
+  return c.json({ project: { ...old, id: newId }, snippet: `<script src="${baseUrl}/t.js" data-id="${newId}"></script>` });
+});
+
 export default projectsRouter;

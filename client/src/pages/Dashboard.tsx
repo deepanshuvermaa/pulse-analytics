@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api } from '../api';
-import { ArrowLeft, Copy, Check, Users, Eye, MousePointer, Activity, Sparkles, LogOut } from 'lucide-react';
+import { ArrowLeft, Copy, Check, Users, Eye, MousePointer, Activity, Sparkles, LogOut, RefreshCw } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 export default function Dashboard({ user, onLogout }: { user: any; onLogout: () => void }) {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [overview, setOverview] = useState<any>(null);
   const [pageviews, setPageviews] = useState<any[]>([]);
   const [pages, setPages] = useState<any[]>([]);
@@ -147,6 +148,9 @@ export default function Dashboard({ user, onLogout }: { user: any; onLogout: () 
             <div className="bg-forest/95 rounded-2xl p-5 font-mono text-sm text-meadow-300 overflow-x-auto">{snippet}</div>
             <button onClick={copySnippet} className="mt-4 bg-meadow-600 hover:bg-meadow-700 text-white font-medium px-5 py-2.5 rounded-full transition-colors flex items-center gap-2 text-sm">
               {copied ? <><Check className="w-4 h-4" /> Copied!</> : <><Copy className="w-4 h-4" /> Copy Snippet</>}
+            </button>
+            <button onClick={async () => { if(!confirm('This will invalidate the old snippet. Continue?')) return; const r = await api.regenerateProject(id!); if(r.ok){ const d = await r.json(); navigate(`/dashboard/${d.project.id}`); }}} className="mt-4 ml-3 border border-meadow-300 text-forest-muted hover:text-forest font-medium px-5 py-2.5 rounded-full transition-colors inline-flex items-center gap-2 text-sm">
+              <RefreshCw className="w-4 h-4" /> Regenerate ID
             </button>
           </div>
         )}

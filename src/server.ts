@@ -20,7 +20,8 @@ app.use('/api/*', cors({
   credentials: true,
 }));
 
-// Tracker script — CORS open, cacheable
+// Static assets (video, tracker)
+app.get('/pulsehero.mp4', serveStatic({ path: './public/pulsehero.mp4' }));
 app.use('/t.js', cors({ origin: '*' }));
 app.get('/t.js', serveStatic({ path: './public/t.js' }));
 

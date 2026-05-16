@@ -42,6 +42,7 @@ export const api = {
   getProjects: () => request('/projects'),
   createProject: (data: any) => request('/projects', { method: 'POST', body: JSON.stringify(data) }),
   deleteProject: (id: string) => request(`/projects/${id}`, { method: 'DELETE' }),
+  regenerateProject: (id: string) => request(`/projects/${id}/regenerate`, { method: 'POST' }),
   getProject: (id: string) => request(`/projects/${id}`),
 
   // Analytics
