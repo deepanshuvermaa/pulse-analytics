@@ -1,0 +1,7 @@
+node_modules
+dist
+.env
+*.log
+drizzle
+seed.ts
+Deepanshu_Complete_Interview_Prep.docx
