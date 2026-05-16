@@ -149,13 +149,15 @@ analytics.get('/:projectId/engagement', async (c) => {
   const day1 = new Date(now); day1.setHours(0,0,0,0);
   const day7 = new Date(now); day7.setDate(day7.getDate() - 7);
   const day30 = new Date(now); day30.setDate(day30.getDate() - 30);
+  const day1Str = day1.toISOString();
+  const day7Str = day7.toISOString();
+  const day30Str = day30.toISOString();
 
   const [dau, wau, mau, returning, rageClicks, deadClicks] = await Promise.all([
     db.select({ count: countDistinct(events.visitorId) }).from(events).where(and(eq(events.projectId, pid), eq(events.type, 'pageview'), gte(events.timestamp, day1))),
     db.select({ count: countDistinct(events.visitorId) }).from(events).where(and(eq(events.projectId, pid), eq(events.type, 'pageview'), gte(events.timestamp, day7))),
     db.select({ count: countDistinct(events.visitorId) }).from(events).where(and(eq(events.projectId, pid), eq(events.type, 'pageview'), gte(events.timestamp, day30))),
-    // Returning visitors: visitors who appeared on more than 1 distinct day in last 30 days
-    db.execute(sql`SELECT COUNT(*) as count FROM (SELECT visitor_id FROM events WHERE project_id = ${pid} AND type = 'pageview' AND timestamp >= ${day30} GROUP BY visitor_id HAVING COUNT(DISTINCT DATE(timestamp)) > 1) sub`),
+    db.execute(sql`SELECT COUNT(*) as count FROM (SELECT visitor_id FROM events WHERE project_id = ${pid} AND type = 'pageview' AND timestamp >= ${day30Str}::timestamp GROUP BY visitor_id HAVING COUNT(DISTINCT DATE(timestamp)) > 1) sub`),
     db.select({ count: count() }).from(events).where(and(eq(events.projectId, pid), eq(events.type, 'rage_click'), gte(events.timestamp, day7))),
     db.select({ count: count() }).from(events).where(and(eq(events.projectId, pid), eq(events.type, 'dead_click'), gte(events.timestamp, day7))),
   ]);
