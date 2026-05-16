@@ -4,10 +4,12 @@ import { logger } from 'hono/logger';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { serve } from '@hono/node-server';
 import { env } from './config.js';
+import { initDB } from './db/index.js';
 import auth from './routes/auth.js';
 import collect from './routes/collect.js';
 import projectsRouter from './routes/projects.js';
 import analytics from './routes/analytics.js';
+import admin from './routes/admin.js';
 
 const app = new Hono();
 
@@ -30,6 +32,7 @@ app.route('/api/auth', auth);
 app.route('/api/collect', collect);
 app.route('/api/projects', projectsRouter);
 app.route('/api/analytics', analytics);
+app.route('/api/admin', admin);
 
 // Health check
 app.get('/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOString() }));
@@ -40,9 +43,11 @@ if (env.NODE_ENV === 'production') {
   app.get('/*', serveStatic({ path: './dist/client/index.html' }));
 }
 
-// Start
-serve({ fetch: app.fetch, port: env.PORT }, (info) => {
-  console.log(`🚀 Pulse Analytics running on http://localhost:${info.port}`);
-});
+// Start with DB init
+initDB().then(() => {
+  serve({ fetch: app.fetch, port: env.PORT }, (info) => {
+    console.log(`🚀 Pulse Analytics running on http://localhost:${info.port}`);
+  });
+}).catch(e => { console.error('DB init failed:', e); process.exit(1); });
 
 export default app;
