@@ -144,43 +144,49 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* PRICING */}
+      {/* PRICING — Contact Modal Trigger */}
       <section id="pricing" className="py-24 sm:py-32 bg-meadow-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold text-forest mb-4">Simple pricing</h2>
-          <p className="text-forest-muted mb-12">Free for indie hackers. Scale when you're ready.</p>
-          <div className="grid sm:grid-cols-2 gap-6 max-w-2xl mx-auto">
-            <div className="bg-white rounded-2xl p-8 border border-meadow-200 text-left">
-              <div className="text-sm font-semibold text-meadow-600 mb-2">Free</div>
-              <div className="text-4xl font-bold text-forest">$0</div>
-              <p className="text-sm text-forest-muted mt-2 mb-6">Perfect for side projects</p>
-              <ul className="space-y-3 text-sm text-forest-muted">
-                <li>✓ 3 projects</li><li>✓ 10K events/month</li><li>✓ 7-day retention</li><li>✓ Real-time dashboard</li>
-              </ul>
-              <Link to="/signup" className="mt-8 block text-center bg-meadow-100 text-meadow-700 font-semibold py-3 rounded-full hover:bg-meadow-200 transition-colors">Start Free</Link>
-            </div>
-            <div className="bg-forest rounded-2xl p-8 text-left relative overflow-hidden">
-              <div className="absolute top-4 right-4 bg-meadow-500 text-white text-xs font-bold px-3 py-1 rounded-full">Popular</div>
-              <div className="text-sm font-semibold text-meadow-300 mb-2">Pro</div>
-              <div className="text-4xl font-bold text-white">$9<span className="text-lg font-normal text-white/60">/mo</span></div>
-              <p className="text-sm text-white/60 mt-2 mb-6">For serious builders</p>
-              <ul className="space-y-3 text-sm text-white/80">
-                <li>✓ Unlimited projects</li><li>✓ 1M events/month</li><li>✓ 1-year retention</li><li>✓ Custom events API</li>
-              </ul>
-              <Link to="/signup" className="mt-8 block text-center bg-meadow-500 text-white font-semibold py-3 rounded-full hover:bg-meadow-400 transition-colors">Get Pro</Link>
+          <h2 className="text-3xl sm:text-4xl font-bold text-forest mb-4">Ready to scale your analytics?</h2>
+          <p className="text-forest-muted mb-12 max-w-xl mx-auto">We offer custom plans for teams and startups. Reach out and let's build something together.</p>
+          <div className="bg-white rounded-2xl p-8 border border-meadow-200 max-w-md mx-auto">
+            <h3 className="text-xl font-bold text-forest mb-6">Get in Touch</h3>
+            <div className="space-y-4">
+              <a href="https://www.linkedin.com/in/deepanshu-verma-238080200/" target="_blank" rel="noopener" className="flex items-center gap-3 p-4 rounded-xl bg-meadow-50 border border-meadow-200 hover:border-meadow-400 transition-colors">
+                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center"><svg className="w-5 h-5 text-blue-700" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></div>
+                <div className="text-left"><div className="font-semibold text-forest text-sm">LinkedIn</div><div className="text-xs text-forest-muted">Connect professionally</div></div>
+              </a>
+              <a href="mailto:deepanshuverma966@gmail.com" className="flex items-center gap-3 p-4 rounded-xl bg-meadow-50 border border-meadow-200 hover:border-meadow-400 transition-colors">
+                <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center"><svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg></div>
+                <div className="text-left"><div className="font-semibold text-forest text-sm">Email</div><div className="text-xs text-forest-muted">deepanshuverma966@gmail.com</div></div>
+              </a>
+              <a href="https://deepanshuverma.site" target="_blank" rel="noopener" className="flex items-center gap-3 p-4 rounded-xl bg-meadow-50 border border-meadow-200 hover:border-meadow-400 transition-colors">
+                <div className="w-10 h-10 rounded-full bg-meadow-100 flex items-center justify-center"><Globe className="w-5 h-5 text-meadow-700" /></div>
+                <div className="text-left"><div className="font-semibold text-forest text-sm">Portfolio</div><div className="text-xs text-forest-muted">deepanshuverma.site</div></div>
+              </a>
             </div>
           </div>
         </div>
       </section>
 
       {/* FOOTER */}
-      <footer className="py-12 bg-white border-t border-meadow-200">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span className="font-semibold text-forest">Pulse<sup className="text-xs">™</sup> Analytics</span>
-          <p className="text-sm text-forest-muted">© 2026 Pulse Analytics. Privacy-first, always.</p>
-          <div className="flex gap-6 text-sm text-forest-muted">
-            <Link to="/login">Sign In</Link>
-            <Link to="/signup">Sign Up</Link>
+      <footer className="py-12 bg-forest">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div>
+              <span className="font-semibold text-white text-lg">Pulse<sup className="text-xs">™</sup> Analytics</span>
+              <p className="text-sm text-white/50 mt-1">Privacy-first analytics for modern builders.</p>
+            </div>
+            <div className="flex flex-wrap gap-6 text-sm text-white/70">
+              <Link to="/login" className="hover:text-white transition-colors">Sign In</Link>
+              <Link to="/signup" className="hover:text-white transition-colors">Sign Up</Link>
+              <a href="https://deepanshuverma.site" target="_blank" rel="noopener" className="hover:text-white transition-colors">Portfolio</a>
+              <a href="https://www.linkedin.com/in/deepanshu-verma-238080200/" target="_blank" rel="noopener" className="hover:text-white transition-colors">LinkedIn</a>
+            </div>
+          </div>
+          <div className="mt-8 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-xs text-white/40">© 2026 Pulse Analytics. Built by <a href="https://deepanshuverma.site" target="_blank" rel="noopener" className="text-meadow-300 hover:text-meadow-200">Deepanshu Verma</a></p>
+            <p className="text-xs text-white/40">No cookies · GDPR ready · &lt;2KB script</p>
           </div>
         </div>
       </footer>

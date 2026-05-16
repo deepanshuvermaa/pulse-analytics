@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api';
-import { Plus, Sparkles, LogOut, FolderOpen, Shield, X, Code, BarChart3, Zap } from 'lucide-react';
+import { Plus, Sparkles, LogOut, FolderOpen, Shield, X, Code, BarChart3, Zap, MessageSquare, Send } from 'lucide-react';
 
 export default function Projects({ user, onLogout }: { user: any; onLogout: () => void }) {
   const [projects, setProjects] = useState<any[]>([]);
@@ -9,6 +9,9 @@ export default function Projects({ user, onLogout }: { user: any; onLogout: () =
   const [name, setName] = useState('');
   const [domain, setDomain] = useState('');
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showSuggestion, setShowSuggestion] = useState(false);
+  const [suggestion, setSuggestion] = useState('');
+  const [suggestionSent, setSuggestionSent] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -80,6 +83,30 @@ export default function Projects({ user, onLogout }: { user: any; onLogout: () =
                 <p className="text-xs text-meadow-400 font-mono mt-3">{p.id}</p>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Suggestion Floating Button */}
+        <button onClick={() => setShowSuggestion(true)} className="fixed bottom-6 right-6 bg-forest hover:bg-forest-light text-white w-12 h-12 rounded-full shadow-lg flex items-center justify-center z-40 transition-colors" title="Send a suggestion">
+          <MessageSquare className="w-5 h-5" />
+        </button>
+
+        {/* Suggestion Modal */}
+        {showSuggestion && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-2xl p-6 max-w-sm w-full relative shadow-2xl">
+              <button onClick={() => { setShowSuggestion(false); setSuggestionSent(false); }} className="absolute top-4 right-4 text-forest-muted hover:text-forest"><X className="w-5 h-5" /></button>
+              <h3 className="text-lg font-bold text-forest mb-2">💡 Send a Suggestion</h3>
+              <p className="text-sm text-forest-muted mb-4">Help us improve Pulse. What feature or fix would you love?</p>
+              {suggestionSent ? (
+                <div className="text-center py-4"><p className="text-meadow-600 font-semibold">Thanks! We received your suggestion. 🎉</p></div>
+              ) : (
+                <form onSubmit={async (e) => { e.preventDefault(); const r = await fetch('/api/suggestions', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` }, body: JSON.stringify({ message: suggestion }) }); if (r.ok) { setSuggestionSent(true); setSuggestion(''); } }}>
+                  <textarea className="w-full px-4 py-3 rounded-xl border border-meadow-200 bg-meadow-50 text-sm focus:outline-none focus:border-meadow-500 resize-none h-28" placeholder="I wish Pulse could..." value={suggestion} onChange={e => setSuggestion(e.target.value)} required />
+                  <button type="submit" className="mt-3 w-full bg-forest hover:bg-forest-light text-white font-semibold py-2.5 rounded-full transition-colors flex items-center justify-center gap-2 text-sm"><Send className="w-4 h-4" /> Submit</button>
+                </form>
+              )}
+            </div>
           </div>
         )}
 

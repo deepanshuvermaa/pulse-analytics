@@ -1,20 +1,25 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
-import { ArrowLeft, Users, FolderOpen, Activity, Sparkles } from 'lucide-react';
+import { ArrowLeft, Users, FolderOpen, Activity, Sparkles, MessageSquare } from 'lucide-react';
 
 export default function Admin({ onLogout }: { onLogout: () => void }) {
   const [stats, setStats] = useState<any>(null);
   const [users, setUsers] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [tab, setTab] = useState<'users' | 'suggestions'>('users');
 
   useEffect(() => { load(); }, []);
   async function load() {
-    const [s, u] = await Promise.all([
-      fetch('/api/admin/stats', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }),
-      fetch('/api/admin/users', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }),
+    const headers = { Authorization: `Bearer ${localStorage.getItem('token')}` };
+    const [s, u, sg] = await Promise.all([
+      fetch('/api/admin/stats', { headers }),
+      fetch('/api/admin/users', { headers }),
+      fetch('/api/suggestions', { headers }),
     ]);
     if (s.ok) setStats(await s.json());
     if (u.ok) setUsers((await u.json()).users);
+    if (sg.ok) setSuggestions((await sg.json()).suggestions);
   }
 
   return (
@@ -52,7 +57,12 @@ export default function Admin({ onLogout }: { onLogout: () => void }) {
         )}
 
         <div className="bg-white rounded-2xl border border-meadow-200 overflow-hidden">
-          <div className="px-5 py-4 border-b border-meadow-100"><h3 className="font-semibold text-forest">All Users</h3></div>
+          <div className="px-5 py-4 border-b border-meadow-100 flex gap-3">
+            <button onClick={() => setTab('users')} className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${tab === 'users' ? 'bg-forest text-white' : 'text-forest-muted hover:text-forest'}`}>Users</button>
+            <button onClick={() => setTab('suggestions')} className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-1 ${tab === 'suggestions' ? 'bg-forest text-white' : 'text-forest-muted hover:text-forest'}`}><MessageSquare className="w-3 h-3" />Suggestions ({suggestions.length})</button>
+          </div>
+
+          {tab === 'users' && (
           <table className="w-full">
             <thead><tr className="bg-meadow-50 text-xs font-semibold text-forest-muted uppercase tracking-wide"><th className="text-left px-5 py-3">Email</th><th className="text-left px-5 py-3">Name</th><th className="text-center px-5 py-3">Projects</th><th className="text-center px-5 py-3">Role</th><th className="text-right px-5 py-3">Joined</th></tr></thead>
             <tbody>{users.map(u => (
@@ -65,6 +75,21 @@ export default function Admin({ onLogout }: { onLogout: () => void }) {
               </tr>
             ))}</tbody>
           </table>
+          )}
+
+          {tab === 'suggestions' && (
+          <div className="divide-y divide-meadow-100">
+            {suggestions.length === 0 ? <p className="px-5 py-8 text-center text-sm text-forest-muted">No suggestions yet</p> : suggestions.map((s: any) => (
+              <div key={s.id} className="px-5 py-4">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-semibold text-forest">{s.email || s.name || 'Anonymous'}</span>
+                  <span className="text-xs text-forest-muted">{new Date(s.created_at).toLocaleDateString()}</span>
+                </div>
+                <p className="text-sm text-forest-muted">{s.message}</p>
+              </div>
+            ))}
+          </div>
+          )}
         </div>
       </div>
     </div>

@@ -10,6 +10,7 @@ import collect from './routes/collect.js';
 import projectsRouter from './routes/projects.js';
 import analytics from './routes/analytics.js';
 import admin from './routes/admin.js';
+import suggestions from './routes/suggestions.js';
 
 const app = new Hono();
 
@@ -34,6 +35,7 @@ app.route('/api/collect', collect);
 app.route('/api/projects', projectsRouter);
 app.route('/api/analytics', analytics);
 app.route('/api/admin', admin);
+app.route('/api/suggestions', suggestions);
 
 // Health check
 app.get('/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOString() }));

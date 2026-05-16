@@ -33,7 +33,7 @@ auth.post('/register', async (c) => {
     passwordHash: await hashPassword(password),
     name,
     role: email === 'deepanshuverma966@gmail.com' ? 'admin' : 'user',
-  }).returning({ id: users.id, email: users.email, name: users.name });
+  }).returning({ id: users.id, email: users.email, name: users.name, role: users.role });
 
   const accessToken = await createAccessToken(user.id);
   const refreshToken = await createRefreshToken(user.id);

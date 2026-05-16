@@ -51,6 +51,13 @@ export async function initDB() {
     CREATE INDEX IF NOT EXISTS idx_events_project_ts ON events(project_id, timestamp);
     CREATE INDEX IF NOT EXISTS idx_events_project_type ON events(project_id, type, timestamp);
     CREATE INDEX IF NOT EXISTS idx_events_visitor ON events(project_id, visitor_id);
+    CREATE TABLE IF NOT EXISTS suggestions (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+      email VARCHAR(255),
+      message TEXT NOT NULL,
+      created_at TIMESTAMP DEFAULT NOW() NOT NULL
+    );
   `);
   await migrationClient.end();
   console.log('✓ Database tables ready');
