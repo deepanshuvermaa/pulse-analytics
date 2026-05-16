@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 export default function Landing() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showContact, setShowContact] = useState(false);
 
   return (
     <div className="font-body">
@@ -146,26 +147,64 @@ export default function Landing() {
 
       {/* PRICING — Contact Modal Trigger */}
       <section id="pricing" className="py-24 sm:py-32 bg-meadow-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold text-forest mb-4">Ready to scale your analytics?</h2>
-          <p className="text-forest-muted mb-12 max-w-xl mx-auto">We offer custom plans for teams and startups. Reach out and let's build something together.</p>
-          <div className="bg-white rounded-2xl p-8 border border-meadow-200 max-w-md mx-auto">
-            <h3 className="text-xl font-bold text-forest mb-6">Get in Touch</h3>
-            <div className="space-y-4">
-              <a href="https://www.linkedin.com/in/deepanshu-verma-238080200/" target="_blank" rel="noopener" className="flex items-center gap-3 p-4 rounded-xl bg-meadow-50 border border-meadow-200 hover:border-meadow-400 transition-colors">
-                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center"><svg className="w-5 h-5 text-blue-700" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></div>
-                <div className="text-left"><div className="font-semibold text-forest text-sm">LinkedIn</div><div className="text-xs text-forest-muted">Connect professionally</div></div>
-              </a>
-              <a href="mailto:deepanshuverma966@gmail.com" className="flex items-center gap-3 p-4 rounded-xl bg-meadow-50 border border-meadow-200 hover:border-meadow-400 transition-colors">
-                <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center"><svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg></div>
-                <div className="text-left"><div className="font-semibold text-forest text-sm">Email</div><div className="text-xs text-forest-muted">deepanshuverma966@gmail.com</div></div>
-              </a>
-              <a href="https://deepanshuverma.site" target="_blank" rel="noopener" className="flex items-center gap-3 p-4 rounded-xl bg-meadow-50 border border-meadow-200 hover:border-meadow-400 transition-colors">
-                <div className="w-10 h-10 rounded-full bg-meadow-100 flex items-center justify-center"><Globe className="w-5 h-5 text-meadow-700" /></div>
-                <div className="text-left"><div className="font-semibold text-forest text-sm">Portfolio</div><div className="text-xs text-forest-muted">deepanshuverma.site</div></div>
-              </a>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center">
+          <h2 className="text-3xl sm:text-4xl font-bold text-forest mb-4">Simple, Transparent Pricing</h2>
+          <p className="text-forest-muted mb-12 max-w-xl mx-auto">Start free, scale when you're ready.</p>
+          <div className="grid sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
+            {/* Free Plan */}
+            <div className="bg-white rounded-2xl p-8 border border-meadow-200 text-left">
+              <h3 className="text-lg font-bold text-forest mb-2">Free</h3>
+              <p className="text-3xl font-bold text-forest mb-1">$0<span className="text-sm font-normal text-forest-muted">/mo</span></p>
+              <p className="text-sm text-forest-muted mb-6">For side projects & testing</p>
+              <ul className="space-y-2 text-sm text-forest-muted">
+                <li>✓ Up to 5 projects</li>
+                <li>✓ Unlimited pageviews</li>
+                <li>✓ Real-time dashboard</li>
+                <li>✓ 30-day data retention</li>
+              </ul>
+              <Link to="/signup" className="mt-6 block text-center bg-meadow-100 text-meadow-700 font-medium px-5 py-2.5 rounded-full text-sm hover:bg-meadow-200 transition-colors">Get Started</Link>
+            </div>
+            {/* Pro Plan */}
+            <div className="bg-white rounded-2xl p-8 border-2 border-meadow-500 text-left relative">
+              <span className="absolute -top-3 left-6 bg-meadow-600 text-white text-xs font-semibold px-3 py-1 rounded-full">Popular</span>
+              <h3 className="text-lg font-bold text-forest mb-2">Pro</h3>
+              <p className="text-3xl font-bold text-forest mb-1">Custom</p>
+              <p className="text-sm text-forest-muted mb-6">For teams & startups</p>
+              <ul className="space-y-2 text-sm text-forest-muted">
+                <li>✓ Unlimited projects</li>
+                <li>✓ Unlimited pageviews</li>
+                <li>✓ Priority support</li>
+                <li>✓ Unlimited data retention</li>
+              </ul>
+              <button onClick={() => setShowContact(true)} className="mt-6 w-full bg-forest hover:bg-forest-light text-white font-medium px-5 py-2.5 rounded-full text-sm transition-colors">Contact Us</button>
             </div>
           </div>
+
+          {/* Contact Info — shown on click */}
+          {showContact && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShowContact(false)}>
+              <div className="bg-white rounded-2xl p-8 border border-meadow-200 max-w-md w-full mx-4" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-bold text-forest">Get in Touch</h3>
+                  <button onClick={() => setShowContact(false)} className="text-forest-muted hover:text-forest"><X className="w-5 h-5" /></button>
+                </div>
+                <div className="space-y-4">
+                  <a href="https://www.linkedin.com/in/deepanshu-verma-238080200/" target="_blank" rel="noopener" className="flex items-center gap-3 p-4 rounded-xl bg-meadow-50 border border-meadow-200 hover:border-meadow-400 transition-colors">
+                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center"><svg className="w-5 h-5 text-blue-700" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></div>
+                    <div className="text-left"><div className="font-semibold text-forest text-sm">LinkedIn</div><div className="text-xs text-forest-muted">Connect professionally</div></div>
+                  </a>
+                  <a href="mailto:deepanshuverma966@gmail.com" className="flex items-center gap-3 p-4 rounded-xl bg-meadow-50 border border-meadow-200 hover:border-meadow-400 transition-colors">
+                    <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center"><svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg></div>
+                    <div className="text-left"><div className="font-semibold text-forest text-sm">Email</div><div className="text-xs text-forest-muted">deepanshuverma966@gmail.com</div></div>
+                  </a>
+                  <a href="https://deepanshuverma.site" target="_blank" rel="noopener" className="flex items-center gap-3 p-4 rounded-xl bg-meadow-50 border border-meadow-200 hover:border-meadow-400 transition-colors">
+                    <div className="w-10 h-10 rounded-full bg-meadow-100 flex items-center justify-center"><Globe className="w-5 h-5 text-meadow-700" /></div>
+                    <div className="text-left"><div className="font-semibold text-forest text-sm">Portfolio</div><div className="text-xs text-forest-muted">deepanshuverma.site</div></div>
+                  </a>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 

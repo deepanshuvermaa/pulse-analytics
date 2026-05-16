@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { db } from '../db/index.js';
-import { projects, events } from '../db/schema.js';
+import { projects, events, users } from '../db/schema.js';
 import { eq, and, count } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { authMiddleware } from '../middleware/auth.js';
@@ -31,6 +31,16 @@ projectsRouter.post('/', async (c) => {
   if (!body.success) return c.json({ error: body.error.flatten() }, 400);
 
   const userId = c.get('userId');
+
+  // Enforce 5-project limit for non-admin users
+  const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
+  if (user?.role !== 'admin') {
+    const [{ value: projectCount }] = await db.select({ value: count() }).from(projects).where(eq(projects.userId, userId));
+    if (projectCount >= 5) {
+      return c.json({ error: 'Free plan limited to 5 projects. Contact us to upgrade.' }, 403);
+    }
+  }
+
   const id = nanoid(12);
 
   const [project] = await db.insert(projects).values({
