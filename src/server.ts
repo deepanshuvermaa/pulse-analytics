@@ -17,13 +17,17 @@ const app = new Hono();
 // Middleware
 app.use('*', logger());
 
-// Collector — open to all origins (tracker sends from any domain)
-app.use('/api/collect', cors({ origin: '*' }));
+// Collector — open to all origins, no credentials (tracker sends from any domain)
+app.use('/api/collect', cors({ origin: '*', credentials: false }));
 
-app.use('/api/*', cors({
-  origin: env.NODE_ENV === 'production' ? env.CORS_ORIGIN : '*',
-  credentials: true,
-}));
+// All other API routes — restricted origin with credentials
+app.use('/api/*', async (c, next) => {
+  if (c.req.path.startsWith('/api/collect')) return next();
+  return cors({
+    origin: env.NODE_ENV === 'production' ? env.CORS_ORIGIN : '*',
+    credentials: true,
+  })(c, next);
+});
 
 // Static assets (video, tracker)
 app.get('/pulsehero.mp4', serveStatic({ path: './public/pulsehero.mp4' }));
