@@ -50,7 +50,8 @@ projectsRouter.post('/', async (c) => {
     domain: body.data.domain,
   }).returning();
 
-  return c.json({ project, snippet: `<script src="${c.req.url.replace('/api/projects', '/t.js')}" data-id="${id}"></script>` }, 201);
+  const origin = new URL(c.req.url).origin.replace(/^http:/, 'https:');
+  return c.json({ project, snippet: `<script src="${origin}/t.js" data-id="${id}"></script>` }, 201);
 });
 
 // Get project + snippet
@@ -61,7 +62,7 @@ projectsRouter.get('/:id', async (c) => {
   });
   if (!project) return c.json({ error: 'Not found' }, 404);
 
-  const baseUrl = new URL(c.req.url).origin;
+  const baseUrl = new URL(c.req.url).origin.replace(/^http:/, 'https:');
   return c.json({
     project,
     snippet: `<script src="${baseUrl}/t.js" data-id="${project.id}"></script>`,
@@ -105,7 +106,7 @@ projectsRouter.post('/:id/regenerate', async (c) => {
   await db.insert(projects).values({ id: newId, userId, name: old.name, domain: old.domain });
   await db.delete(projects).where(eq(projects.id, old.id));
 
-  const baseUrl = new URL(c.req.url).origin;
+  const baseUrl = new URL(c.req.url).origin.replace(/^http:/, 'https:');
   return c.json({ project: { ...old, id: newId }, snippet: `<script src="${baseUrl}/t.js" data-id="${newId}"></script>` });
 });
 
