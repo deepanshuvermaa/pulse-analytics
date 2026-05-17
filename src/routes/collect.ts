@@ -91,10 +91,15 @@ collect.post('/', async (c) => {
     await redis.set(projCacheKey, proj.domain, 'EX', 300);
   }
 
-  // Origin validation (optional in dev)
+  // Origin validation
   const origin = c.req.header('origin') || c.req.header('referer') || '';
-  if (projectDomain !== '*' && origin && !origin.includes(projectDomain)) {
-    return c.json({ error: 'Origin mismatch' }, 403);
+  if (projectDomain !== '*' && origin) {
+    try {
+      const originHost = new URL(origin).hostname;
+      if (!originHost.includes(projectDomain) && !projectDomain.includes(originHost)) {
+        return c.json({ error: 'Origin mismatch' }, 403);
+      }
+    } catch {}
   }
 
   // Parse user agent
