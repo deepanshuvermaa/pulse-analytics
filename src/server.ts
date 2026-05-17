@@ -16,6 +16,10 @@ const app = new Hono();
 
 // Middleware
 app.use('*', logger());
+
+// Collector — open to all origins (tracker sends from any domain)
+app.use('/api/collect', cors({ origin: '*' }));
+
 app.use('/api/*', cors({
   origin: env.NODE_ENV === 'production' ? env.CORS_ORIGIN : '*',
   credentials: true,
@@ -25,9 +29,6 @@ app.use('/api/*', cors({
 app.get('/pulsehero.mp4', serveStatic({ path: './public/pulsehero.mp4' }));
 app.use('/t.js', cors({ origin: '*' }));
 app.get('/t.js', serveStatic({ path: './public/t.js' }));
-
-// Collector — open to all origins (tracker sends from any domain)
-app.use('/api/collect', cors({ origin: '*' }));
 
 // Routes
 app.route('/api/auth', auth);
