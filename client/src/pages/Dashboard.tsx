@@ -7,17 +7,19 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, 
 export default function Dashboard({ user, onLogout }: { user: any; onLogout: () => void }) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [overview, setOverview] = useState<any>(null);
-  const [pageviews, setPageviews] = useState<any[]>([]);
-  const [pages, setPages] = useState<any[]>([]);
-  const [referrers, setReferrers] = useState<any[]>([]);
-  const [devices, setDevices] = useState<any>(null);
-  const [engagement, setEngagement] = useState<any>(null);
-  const [errors, setErrors] = useState<any>(null);
-  const [snippet, setSnippet] = useState('');
+  const cacheKey = `pulse_dash_${id}`;
+  const cached = (() => { try { return JSON.parse(sessionStorage.getItem(cacheKey) || 'null'); } catch { return null; } })();
+  const [overview, setOverview] = useState<any>(cached?.overview || null);
+  const [pageviews, setPageviews] = useState<any[]>(cached?.pageviews || []);
+  const [pages, setPages] = useState<any[]>(cached?.pages || []);
+  const [referrers, setReferrers] = useState<any[]>(cached?.referrers || []);
+  const [devices, setDevices] = useState<any>(cached?.devices || null);
+  const [engagement, setEngagement] = useState<any>(cached?.engagement || null);
+  const [errors, setErrors] = useState<any>(cached?.errors || null);
+  const [snippet, setSnippet] = useState(cached?.snippet || '');
   const [copied, setCopied] = useState(false);
   const [tab, setTab] = useState('overview');
-  const [clarityId, setClarityId] = useState('');
+  const [clarityId, setClarityId] = useState(cached?.clarityId || '');
   const [claritySaved, setClaritySaved] = useState(false);
 
   useEffect(() => { if (id) load(); }, [id]);
@@ -28,14 +30,16 @@ export default function Dashboard({ user, onLogout }: { user: any; onLogout: () 
       api.getReferrers(id!), api.getDevices(id!), api.getEngagement(id!),
       api.getErrors(id!), api.getProject(id!),
     ]);
-    if (ov.ok) setOverview(await ov.json());
-    if (pv.ok) setPageviews((await pv.json()).data);
-    if (pg.ok) setPages((await pg.json()).data);
-    if (ref.ok) setReferrers((await ref.json()).data);
-    if (dev.ok) setDevices(await dev.json());
-    if (eng.ok) setEngagement(await eng.json());
-    if (err.ok) setErrors(await err.json());
-    if (proj.ok) { const d = await proj.json(); setSnippet(d.snippet); setClarityId(d.project?.clarityId || ''); }
+    const c: any = {};
+    if (ov.ok) { c.overview = await ov.json(); setOverview(c.overview); }
+    if (pv.ok) { c.pageviews = (await pv.json()).data; setPageviews(c.pageviews); }
+    if (pg.ok) { c.pages = (await pg.json()).data; setPages(c.pages); }
+    if (ref.ok) { c.referrers = (await ref.json()).data; setReferrers(c.referrers); }
+    if (dev.ok) { c.devices = await dev.json(); setDevices(c.devices); }
+    if (eng.ok) { c.engagement = await eng.json(); setEngagement(c.engagement); }
+    if (err.ok) { c.errors = await err.json(); setErrors(c.errors); }
+    if (proj.ok) { const d = await proj.json(); c.snippet = d.snippet; c.clarityId = d.project?.clarityId || ''; setSnippet(c.snippet); setClarityId(c.clarityId); }
+    sessionStorage.setItem(cacheKey, JSON.stringify(c));
   }
 
   function copySnippet() { navigator.clipboard.writeText(snippet); setCopied(true); setTimeout(() => setCopied(false), 2000); }

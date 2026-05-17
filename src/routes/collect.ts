@@ -54,7 +54,10 @@ function scheduleFlush() {
 
 // POST /api/collect
 collect.post('/', async (c) => {
-  const body = eventSchema.safeParse(await c.req.json());
+  // sendBeacon sends as text/plain, so parse raw text if json() fails
+  let parsed;
+  try { parsed = await c.req.json(); } catch { parsed = JSON.parse(await c.req.text()); }
+  const body = eventSchema.safeParse(parsed);
   if (!body.success) return c.json({ error: 'Invalid event' }, 400);
 
   const raw = body.data;

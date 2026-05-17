@@ -4,7 +4,9 @@ import { api } from '../api';
 import { Plus, Sparkles, LogOut, FolderOpen, Shield, X, Code, BarChart3, Zap, MessageSquare, Send } from 'lucide-react';
 
 export default function Projects({ user, onLogout }: { user: any; onLogout: () => void }) {
-  const [projects, setProjects] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>(() => {
+    try { return JSON.parse(sessionStorage.getItem('pulse_projects') || '[]'); } catch { return []; }
+  });
   const [showCreate, setShowCreate] = useState(false);
   const [name, setName] = useState('');
   const [domain, setDomain] = useState('');
@@ -18,7 +20,7 @@ export default function Projects({ user, onLogout }: { user: any; onLogout: () =
     load();
     if (!localStorage.getItem('pulse_onboarded')) setShowOnboarding(true);
   }, []);
-  async function load() { const r = await api.getProjects(); if (r.ok) setProjects((await r.json()).projects); }
+  async function load() { const r = await api.getProjects(); if (r.ok) { const data = (await r.json()).projects; setProjects(data); sessionStorage.setItem('pulse_projects', JSON.stringify(data)); } }
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
