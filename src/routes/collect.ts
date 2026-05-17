@@ -11,8 +11,8 @@ const collect = new Hono();
 const eventSchema = z.object({
   project_id: z.string().min(1).optional(),
   p: z.string().min(1).optional(),
-  type: z.enum(['pageview', 'click', 'scroll', 'session_end', 'custom', 'rage_click', 'dead_click', 'form_submit', 'form_focus', 'js_error']).optional(),
-  t: z.enum(['pageview', 'click', 'scroll', 'session_end', 'custom', 'rage_click', 'dead_click', 'form_submit', 'form_focus', 'js_error']).optional(),
+  type: z.enum(['pageview', 'click', 'scroll', 'session_end', 'custom', 'rage_click', 'dead_click', 'form_submit', 'form_focus', 'js_error', 'performance']).optional(),
+  t: z.enum(['pageview', 'click', 'scroll', 'session_end', 'custom', 'rage_click', 'dead_click', 'form_submit', 'form_focus', 'js_error', 'performance']).optional(),
   visitor_id: z.string().min(1).optional(),
   v: z.string().min(1).optional(),
   session_id: z.string().min(1).optional(),
@@ -91,16 +91,7 @@ collect.post('/', async (c) => {
     await redis.set(projCacheKey, proj.domain, 'EX', 300);
   }
 
-  // Origin validation
-  const origin = c.req.header('origin') || c.req.header('referer') || '';
-  if (projectDomain !== '*' && origin) {
-    try {
-      const originHost = new URL(origin).hostname;
-      if (!originHost.includes(projectDomain) && !projectDomain.includes(originHost)) {
-        return c.json({ error: 'Origin mismatch' }, 403);
-      }
-    } catch {}
-  }
+  // Origin stored for reference only (no blocking — project ID is the auth)
 
   // Parse user agent
   const ua = new UAParser(c.req.header('user-agent') || '');
