@@ -199,4 +199,37 @@ analytics.get('/:projectId/errors', async (c) => {
   return c.json({ errors, total: errorCount[0].count });
 });
 
+// GET /api/analytics/:projectId/performance — page load times
+analytics.get('/:projectId/performance', async (c) => {
+  const userId = c.get('userId');
+  const project = await getProject(c.req.param('projectId'), userId);
+  if (!project) return c.json({ error: 'Not found' }, 404);
+
+  const from = c.req.query('from') || new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+
+  const rows = await db.select({
+    id: events.id,
+    path: events.path,
+    payload: events.payload,
+    timestamp: events.timestamp,
+  }).from(events).where(
+    and(eq(events.projectId, project.id), eq(events.type, 'performance'), gte(events.timestamp, new Date(from)))
+  ).orderBy(desc(events.timestamp)).limit(100);
+
+  // Calculate averages
+  let totalLoad = 0, totalDom = 0, totalTtfb = 0, count = 0;
+  for (const r of rows) {
+    const p = r.payload as any;
+    if (p?.load_time) { totalLoad += p.load_time; totalDom += p.dom_ready || 0; totalTtfb += p.ttfb || 0; count++; }
+  }
+
+  return c.json({
+    avgLoadTime: count ? Math.round(totalLoad / count) : 0,
+    avgDomReady: count ? Math.round(totalDom / count) : 0,
+    avgTtfb: count ? Math.round(totalTtfb / count) : 0,
+    samples: count,
+    recent: rows.slice(0, 20).map(r => ({ path: r.path, ...(r.payload as any), timestamp: r.timestamp })),
+  });
+});
+
 export default analytics;

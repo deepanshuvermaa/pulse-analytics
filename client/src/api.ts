@@ -52,6 +52,7 @@ export const api = {
   getReferrers: (id: string, from?: string) => request(`/analytics/${id}/referrers?from=${from || ''}`),
   getDevices: (id: string, from?: string) => request(`/analytics/${id}/devices?from=${from || ''}`),
   getEngagement: (id: string) => request(`/analytics/${id}/engagement`),
+  getPerformance: (id: string) => request(`/analytics/${id}/performance`),
   getErrors: (id: string) => request(`/analytics/${id}/errors`),
   getLive: (id: string) => request(`/analytics/${id}/live`),
 

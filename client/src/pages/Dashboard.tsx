@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api } from '../api';
-import { ArrowLeft, Copy, Check, Users, Eye, MousePointer, Activity, Sparkles, LogOut, RefreshCw, AlertTriangle, Zap, MousePointerClick, UserCheck } from 'lucide-react';
+import { ArrowLeft, Copy, Check, Users, Eye, MousePointer, Activity, Sparkles, LogOut, RefreshCw, AlertTriangle, Zap, MousePointerClick, UserCheck, Timer } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 export default function Dashboard({ user, onLogout }: { user: any; onLogout: () => void }) {
@@ -16,6 +16,7 @@ export default function Dashboard({ user, onLogout }: { user: any; onLogout: () 
   const [devices, setDevices] = useState<any>(cached?.devices || null);
   const [engagement, setEngagement] = useState<any>(cached?.engagement || null);
   const [errors, setErrors] = useState<any>(cached?.errors || null);
+  const [performance, setPerformance] = useState<any>(cached?.performance || null);
   const [snippet, setSnippet] = useState(cached?.snippet || '');
   const [copied, setCopied] = useState(false);
   const [tab, setTab] = useState('overview');
@@ -25,10 +26,10 @@ export default function Dashboard({ user, onLogout }: { user: any; onLogout: () 
   useEffect(() => { if (id) load(); }, [id]);
 
   async function load() {
-    const [ov, pv, pg, ref, dev, eng, err, proj] = await Promise.all([
+    const [ov, pv, pg, ref, dev, eng, err, perf, proj] = await Promise.all([
       api.getOverview(id!), api.getPageviews(id!), api.getPages(id!),
       api.getReferrers(id!), api.getDevices(id!), api.getEngagement(id!),
-      api.getErrors(id!), api.getProject(id!),
+      api.getErrors(id!), api.getPerformance(id!), api.getProject(id!),
     ]);
     const c: any = {};
     if (ov.ok) { c.overview = await ov.json(); setOverview(c.overview); }
@@ -38,6 +39,7 @@ export default function Dashboard({ user, onLogout }: { user: any; onLogout: () 
     if (dev.ok) { c.devices = await dev.json(); setDevices(c.devices); }
     if (eng.ok) { c.engagement = await eng.json(); setEngagement(c.engagement); }
     if (err.ok) { c.errors = await err.json(); setErrors(c.errors); }
+    if (perf.ok) { c.performance = await perf.json(); setPerformance(c.performance); }
     if (proj.ok) { const d = await proj.json(); c.snippet = d.snippet; c.clarityId = d.project?.clarityId || ''; setSnippet(c.snippet); setClarityId(c.clarityId); }
     sessionStorage.setItem(cacheKey, JSON.stringify(c));
   }
@@ -47,6 +49,7 @@ export default function Dashboard({ user, onLogout }: { user: any; onLogout: () 
   const tabs = [
     { key: 'overview', label: 'Overview' },
     { key: 'engagement', label: 'Engagement' },
+    { key: 'performance', label: 'Performance' },
     { key: 'pages', label: 'Pages' },
     { key: 'referrers', label: 'Referrers' },
     { key: 'devices', label: 'Devices' },
@@ -132,6 +135,39 @@ export default function Dashboard({ user, onLogout }: { user: any; onLogout: () 
                 <div className="text-xs text-amber-500 mt-1">Clicks on non-interactive elements</div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Performance */}
+        {tab === 'performance' && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <StatCard icon={Timer} label="Avg Load Time" value={performance?.avgLoadTime || 0} suffix="ms" />
+              <StatCard icon={Timer} label="Avg DOM Ready" value={performance?.avgDomReady || 0} suffix="ms" />
+              <StatCard icon={Timer} label="Avg TTFB" value={performance?.avgTtfb || 0} suffix="ms" />
+              <StatCard icon={Activity} label="Samples" value={performance?.samples || 0} />
+            </div>
+            {performance?.recent?.length > 0 && (
+              <div className="bg-white rounded-2xl border border-meadow-200 overflow-hidden">
+                <table className="w-full">
+                  <thead><tr className="bg-meadow-50 text-xs font-semibold text-forest-muted uppercase tracking-wide"><th className="text-left px-5 py-3">Page</th><th className="text-right px-5 py-3">Load (ms)</th><th className="text-right px-5 py-3">DOM Ready (ms)</th><th className="text-right px-5 py-3">TTFB (ms)</th></tr></thead>
+                  <tbody>{performance.recent.map((r: any, i: number) => (
+                    <tr key={i} className="border-t border-meadow-100 hover:bg-meadow-50/50">
+                      <td className="px-5 py-3 text-sm text-forest">{r.path}</td>
+                      <td className="px-5 py-3 text-sm text-right font-semibold text-forest">{r.load_time}</td>
+                      <td className="px-5 py-3 text-sm text-right text-forest-muted">{r.dom_ready}</td>
+                      <td className="px-5 py-3 text-sm text-right text-forest-muted">{r.ttfb}</td>
+                    </tr>
+                  ))}</tbody>
+                </table>
+              </div>
+            )}
+            {(!performance || performance.samples === 0) && (
+              <div className="bg-white rounded-2xl p-8 border border-meadow-200 text-center">
+                <Timer className="w-10 h-10 text-meadow-300 mx-auto mb-3" />
+                <p className="text-sm text-forest-muted">No performance data yet. Data will appear after visitors load your site.</p>
+              </div>
+            )}
           </div>
         )}
 
@@ -301,11 +337,11 @@ export default function Dashboard({ user, onLogout }: { user: any; onLogout: () 
   );
 }
 
-function StatCard({ icon: Icon, label, value, accent }: { icon: any; label: string; value: number; accent?: boolean }) {
+function StatCard({ icon: Icon, label, value, accent, suffix }: { icon: any; label: string; value: number; accent?: boolean; suffix?: string }) {
   return (
     <div className={`rounded-2xl p-5 border ${accent ? 'bg-forest text-white border-forest' : 'bg-white border-meadow-200'}`}>
       <Icon className={`w-5 h-5 mb-3 ${accent ? 'text-meadow-300' : 'text-meadow-500'}`} />
-      <div className={`text-3xl font-bold ${accent ? 'text-white' : 'text-forest'}`}>{value}</div>
+      <div className={`text-3xl font-bold ${accent ? 'text-white' : 'text-forest'}`}>{value}{suffix && <span className="text-lg font-medium ml-1">{suffix}</span>}</div>
       <div className={`text-xs mt-1 ${accent ? 'text-white/60' : 'text-forest-muted'}`}>{label}</div>
     </div>
   );
