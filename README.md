@@ -1,6 +1,31 @@
-# 🔮 Pulse Analytics
+# Pulse Analytics
 
-Lightweight, privacy-first analytics platform. Drop a script tag, get insights.
+**Working product demo — lightweight, privacy-conscious web analytics with live operational visibility.**
+
+Pulse Analytics lets a site owner create a project, install a small tracking script, collect events, and inspect live and historical usage through a dashboard. The architecture separates live event handling from historical analytics so the product can remain responsive as data grows.
+
+## Product workflow
+
+```text
+Create project → install tracking script → collect validated events → buffer live activity → persist history → inspect dashboard → export or investigate a trend
+```
+
+The key product concerns are event validation, project isolation, freshness indicators, aggregation correctness, tracker resilience, and clear privacy boundaries. The tracker should fail safely when the network is unavailable and must not silently collect data outside the configured project.
+
+## Verification status
+
+- **Implemented product surface:** project/auth flows, event collection, Redis live path, PostgreSQL history, dashboard endpoints, and lightweight tracker script.
+- **Founder-demo ready:** create a project, install the script on a sample page, generate events, show live activity, then inspect historical page/referrer/device views.
+- **Before production use:** add automated event-schema and aggregation tests, enforce rate limits and payload limits on collection, document retention/deletion controls, verify project authorization on every analytics query, and complete a privacy review.
+
+## Demo walkthrough
+
+1. Create a project and copy its tracker snippet.
+2. Install the snippet on a sample page.
+3. Generate pageview and interaction events.
+4. Show live activity and historical aggregation.
+5. Send an invalid or oversized payload and show the safe rejection path.
+6. Explain the privacy and retention decisions.
 
 ## Quick Start
 
