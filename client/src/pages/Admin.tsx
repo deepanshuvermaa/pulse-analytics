@@ -9,17 +9,19 @@ export default function Admin({ onLogout }: { onLogout: () => void }) {
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [tab, setTab] = useState<'users' | 'suggestions'>('users');
 
+  const [health, setHealth] = useState<any>(null);
+
   useEffect(() => { load(); }, []);
   async function load() {
-    const headers = { Authorization: `Bearer ${localStorage.getItem('token')}` };
-    const [s, u, sg] = await Promise.all([
-      fetch('/api/admin/stats', { headers }),
-      fetch('/api/admin/users', { headers }),
-      fetch('/api/suggestions', { headers }),
+    // The suggestion inbox moved under /api/admin — it exposes user emails and
+    // used to be readable by any signed-in account.
+    const [s, u, sg, h] = await Promise.allSettled([
+      api.adminStats(), api.adminUsers(), api.adminSuggestions(), api.adminHealth(),
     ]);
-    if (s.ok) setStats(await s.json());
-    if (u.ok) setUsers((await u.json()).users);
-    if (sg.ok) setSuggestions((await sg.json()).suggestions);
+    if (s.status === 'fulfilled') setStats(s.value);
+    if (u.status === 'fulfilled') setUsers(u.value.users);
+    if (sg.status === 'fulfilled') setSuggestions(sg.value.suggestions);
+    if (h.status === 'fulfilled') setHealth(h.value);
   }
 
   return (
@@ -50,9 +52,34 @@ export default function Admin({ onLogout }: { onLogout: () => void }) {
             </div>
             <div className="bg-white rounded-2xl p-5 border border-meadow-200 text-center">
               <Activity className="w-6 h-6 text-meadow-500 mx-auto mb-2" />
-              <div className="text-3xl font-bold text-forest">{stats.events}</div>
-              <div className="text-xs text-forest-muted mt-1">Total Events</div>
+              <div className="text-3xl font-bold text-forest">{Number(stats.events).toLocaleString()}</div>
+              <div className="text-xs text-forest-muted mt-1">Events (estimated)</div>
             </div>
+          </div>
+        )}
+
+        {/* Pipeline health — the first thing to check when numbers look wrong. */}
+        {stats && (
+          <div className="bg-white rounded-2xl p-5 border border-meadow-200 mb-8">
+            <h3 className="font-semibold text-forest text-sm mb-3">Ingest pipeline</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { label: 'Sessions built', value: Number(stats.sessions ?? 0).toLocaleString() },
+                { label: 'Queue depth', value: Number(stats.ingestQueue ?? 0).toLocaleString() },
+                { label: 'Unacked', value: Number(stats.ingestPending ?? 0).toLocaleString() },
+                { label: 'Event partitions', value: (health?.partitions?.length ?? 0).toString() },
+              ].map(m => (
+                <div key={m.label} className="bg-meadow-50 rounded-xl px-3 py-2">
+                  <div className="text-[11px] text-forest-muted">{m.label}</div>
+                  <div className="text-lg font-bold text-forest">{m.value}</div>
+                </div>
+              ))}
+            </div>
+            {Number(stats.ingestQueue ?? 0) > 10000 && (
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-3">
+                Queue depth is high — the ingest worker may be falling behind or Postgres may be unavailable.
+              </p>
+            )}
           </div>
         )}
 

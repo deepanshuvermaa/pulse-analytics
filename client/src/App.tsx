@@ -6,6 +6,7 @@ import Auth from './pages/Auth';
 import Projects from './pages/Projects';
 import Dashboard from './pages/Dashboard';
 import Admin from './pages/Admin';
+import Share from './pages/Share';
 
 export default function App() {
   const [user, setUser] = useState<any>(null);
@@ -41,6 +42,8 @@ export default function App() {
 
   return (
     <Routes>
+      {/* Public shared dashboards need no session at all. */}
+      <Route path="/share/:slug" element={<Share />} />
       <Route path="/" element={user ? <Navigate to="/projects" /> : <Landing />} />
       <Route path="/login" element={user ? <Navigate to="/projects" /> : <Auth mode="login" onAuth={handleAuth} />} />
       <Route path="/signup" element={user ? <Navigate to="/projects" /> : <Auth mode="signup" onAuth={handleAuth} />} />

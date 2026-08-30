@@ -1,1 +1,529 @@
-(function(){var _0xf3a1=document['currentScript'];if(!_0xf3a1)return;var _0xa7=_0xf3a1['getAttribute']('data-id'),_0xb2=_0xf3a1['src']['replace']('/t.js','/api/collect');if(!_0xa7)return;var _0xc4=function(_0xd1){var _0xe2=0;for(var _0xf0=0;_0xf0<_0xd1['length'];_0xf0++){_0xe2=((_0xe2<<5)-_0xe2+_0xd1['charCodeAt'](_0xf0))|0}return'v_'+Math['abs'](_0xe2)['toString'](36)};var _0xd8=function(){var _0xe9='_ps',_0xfa=sessionStorage['getItem'](_0xe9);if(_0xfa){var _0x1b=JSON['parse'](_0xfa);if(Date['now']()-_0x1b['t']<18e5){_0x1b['t']=Date['now']();sessionStorage['setItem'](_0xe9,JSON['stringify'](_0x1b));return _0x1b['i']}}var _0x2c='s_'+Math['random']()['toString'](36)['slice'](2,10)+Date['now']()['toString'](36);sessionStorage['setItem'](_0xe9,JSON['stringify']({'i':_0x2c,'t':Date['now']()}));return _0x2c};var _0x3d=_0xc4([navigator['userAgent'],navigator['language'],screen['width'],screen['height'],new Date()['getTimezoneOffset']()]['join']('|'));var _0x4e=_0xd8(),_0x5f=Date['now'](),_0x6a=0;var _0x7b=function(_0x8c,_0x9d){var _0xae=JSON['stringify'](Object['assign']({'p':_0xa7,'t':_0x8c,'v':_0x3d,'s':_0x4e,'u':location['pathname']+location['search'],'r':document['referrer']||null,'ts':new Date()['toISOString']()},_0x9d||{}));fetch(_0xb2,{'method':'POST','body':_0xae,'headers':{'Content-Type':'application/json'},'keepalive':true,'credentials':'omit'})['catch'](function(){})};var _0xbf=function(){var _0xc0=new URLSearchParams(location['search']),_0xd1={};['utm_source','utm_medium','utm_campaign','utm_term','utm_content']['forEach'](function(_0xe2){if(_0xc0['get'](_0xe2))_0xd1[_0xe2]=_0xc0['get'](_0xe2)});return Object['keys'](_0xd1)['length']?_0xd1:null};var _0xf2=function(){_0x5f=Date['now']();_0x4e=_0xd8();_0x7b('pageview',{'payload':_0xbf()})};var _0x13=function(){var _0x24=document['documentElement']['scrollHeight']-window['innerHeight'];if(_0x24<=0)return;var _0x35=Math['round']((window['scrollY']/_0x24)*100);if(_0x35>_0x6a)_0x6a=_0x35};var _0x46=function(){_0x7b('session_end',{'payload':{'duration':Math['round']((Date['now']()-_0x5f)/1000),'scroll_depth':_0x6a}})};var _0x57=function(_0x68){var _0x79=_0x68['target']['closest']('a,button,input[type=\"submit\"],[role=\"button\"],[data-track]');if(!_0x79)return;var _0x8a={'tag':_0x79['tagName'],'text':(_0x79['textContent']||'')['trim']()['slice'](0,50)};if(_0x79['href'])_0x8a['href']=_0x79['href'];if(_0x79['dataset']&&_0x79['dataset']['track'])_0x8a['label']=_0x79['dataset']['track'];_0x7b('click',{'payload':_0x8a})};var _0x9b=location['pathname']+location['search'];var _0xac=function(){var _0xbd=location['pathname']+location['search'];if(_0xbd!==_0x9b){_0x46();_0x9b=_0xbd;_0x6a=0;_0xf2()}};var _0xce=[],_0xdf=null;var _0xe0=function(_0xf1){var _0x02=Date['now']();_0xce['push']({'x':_0xf1['clientX'],'y':_0xf1['clientY'],'t':_0x02});_0xce=_0xce['filter'](function(_0x13){return _0x02-_0x13['t']<1000});if(_0xce['length']>=3){var _0x24=_0xce[0];var _0x35=_0xce['every'](function(_0x46){return Math['abs'](_0x46['x']-_0x24['x'])<30&&Math['abs'](_0x46['y']-_0x24['y'])<30});if(_0x35){_0x7b('rage_click',{'payload':{'x':_0x24['x'],'y':_0x24['y'],'count':_0xce['length']}});_0xce=[]}}};_0xf2();window['addEventListener']('load',function(){if(window['performance']&&performance['timing']){var _0xlt=performance['timing'];var _0xld=_0xlt['loadEventEnd']-_0xlt['navigationStart'];if(_0xld>0){_0x7b('performance',{'payload':{'load_time':_0xld,'dom_ready':_0xlt['domContentLoadedEventEnd']-_0xlt['navigationStart'],'ttfb':_0xlt['responseStart']-_0xlt['navigationStart']}})}}else if(performance['getEntriesByType']){var _0xnav=performance['getEntriesByType']('navigation')[0];if(_0xnav){_0x7b('performance',{'payload':{'load_time':Math['round'](_0xnav['loadEventEnd']),'dom_ready':Math['round'](_0xnav['domContentLoadedEventEnd']),'ttfb':Math['round'](_0xnav['responseStart'])}})}}});window['addEventListener']('scroll',_0x13,{'passive':true});document['addEventListener']('visibilitychange',function(){if(document['visibilityState']==='hidden')_0x46()});window['addEventListener']('beforeunload',_0x46);document['addEventListener']('click',_0x57);document['addEventListener']('click',_0xe0);var _0x56=history['pushState'];history['pushState']=function(){_0x56['apply'](this,arguments);_0xac()};var _0x67=history['replaceState'];history['replaceState']=function(){_0x67['apply'](this,arguments);_0xac()};window['addEventListener']('popstate',_0xac)})();
+/*!
+ * Pulse Analytics tracker
+ *
+ * Deliberately readable. The previous build was hex-obfuscated, which fooled no
+ * ad-blocker, made every customer bug report unactionable, and looked like
+ * malware to anyone reviewing what they were putting on their site.
+ *
+ * Install:
+ *   <script defer src="https://your-host/t.js" data-id="PROJECT_ID"></script>
+ *
+ * Optional attributes:
+ *   data-identity="persistent"  keep a durable id in localStorage (needs consent)
+ *   data-autocapture="false"    stop recording clicks on interactive elements
+ *   data-track-localhost="true" collect from localhost during development
+ *   data-exclude="/admin/*,/preview/*"
+ *   data-api="https://analytics.yoursite.com"   custom collector origin (CNAME proxy)
+ *
+ * API:
+ *   pulse('event', 'signup_completed', { plan: 'pro' })
+ *   pulse('identify', 'user_123')
+ *   pulse('pageview')
+ *   pulse('opt_out') / pulse('opt_in')
+ */
+(function (window, document) {
+  'use strict';
+
+  var script = document.currentScript;
+  if (!script) return;
+
+  var PROJECT_ID = script.getAttribute('data-id');
+  if (!PROJECT_ID) return;
+
+  var API = (script.getAttribute('data-api') || script.src.replace(/\/t\.js.*$/, '')) + '/api/collect';
+  var PERSISTENT = script.getAttribute('data-identity') === 'persistent';
+  var AUTOCAPTURE = script.getAttribute('data-autocapture') !== 'false';
+  var TRACK_LOCALHOST = script.getAttribute('data-track-localhost') === 'true';
+  var EXCLUDES = (script.getAttribute('data-exclude') || '').split(',')
+    .map(function (s) { return s.trim(); }).filter(Boolean);
+
+  var OPT_OUT_KEY = '_pulse_opt_out';
+  var DURABLE_KEY = '_pulse_did';
+  var RETRY_KEY = '_pulse_retry';
+
+  // ── Guards ────────────────────────────────────────────────
+  var host = location.hostname;
+  var isLocal = host === 'localhost' || host === '127.0.0.1' || host === '' || host.indexOf('.local') > -1;
+  if (isLocal && !TRACK_LOCALHOST) return;
+  if (navigator.doNotTrack === '1' || window.doNotTrack === '1') return;
+
+  function optedOut() {
+    try { return localStorage.getItem(OPT_OUT_KEY) === '1'; } catch (e) { return false; }
+  }
+
+  function excluded(path) {
+    for (var i = 0; i < EXCLUDES.length; i++) {
+      var p = EXCLUDES[i];
+      if (p.charAt(p.length - 1) === '*') {
+        if (path.indexOf(p.slice(0, -1)) === 0) return true;
+      } else if (path === p) return true;
+    }
+    return false;
+  }
+
+  // ── State ─────────────────────────────────────────────────
+  var userId = null;
+  var currentPath = location.pathname + location.search;
+  var pageStart = Date.now();
+  var maxScroll = 0;
+  var lastPath = null;
+  var lastPathAt = 0;
+  var queue = [];
+  var flushTimer = null;
+
+  function durableId() {
+    if (!PERSISTENT) return null;
+    try {
+      var id = localStorage.getItem(DURABLE_KEY);
+      if (!id) {
+        id = 'd' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+        localStorage.setItem(DURABLE_KEY, id);
+      }
+      return id;
+    } catch (e) { return null; }
+  }
+
+  // ── Transport ─────────────────────────────────────────────
+  // Events are batched over a short window and retried from localStorage, so a
+  // transient network failure no longer silently drops data.
+
+  function envelope(batch) {
+    return JSON.stringify({
+      p: PROJECT_ID,
+      d: durableId(),
+      uid: userId,
+      b: batch
+    });
+  }
+
+  function persistRetry(batch) {
+    try {
+      var stored = JSON.parse(localStorage.getItem(RETRY_KEY) || '[]');
+      localStorage.setItem(RETRY_KEY, JSON.stringify(stored.concat(batch).slice(-50)));
+    } catch (e) { /* storage full or blocked — drop */ }
+  }
+
+  function send(batch, useBeacon) {
+    if (!batch.length) return;
+    var body = envelope(batch);
+
+    // On page hide, fetch can be cancelled; sendBeacon survives the unload.
+    if (useBeacon && navigator.sendBeacon) {
+      var ok = navigator.sendBeacon(API, new Blob([body], { type: 'text/plain' }));
+      if (!ok) persistRetry(batch);
+      return;
+    }
+
+    fetch(API, {
+      method: 'POST',
+      body: body,
+      headers: { 'Content-Type': 'application/json' },
+      keepalive: true,
+      credentials: 'omit',
+      mode: 'cors'
+    }).then(function (res) {
+      if (!res.ok && res.status !== 429) persistRetry(batch);
+    }).catch(function () {
+      persistRetry(batch);
+    });
+  }
+
+  function flush(useBeacon) {
+    if (flushTimer) { clearTimeout(flushTimer); flushTimer = null; }
+    if (!queue.length) return;
+    var batch = queue.splice(0, queue.length);
+    send(batch, useBeacon);
+  }
+
+  function flushRetries() {
+    try {
+      var stored = JSON.parse(localStorage.getItem(RETRY_KEY) || '[]');
+      if (!stored.length) return;
+      localStorage.removeItem(RETRY_KEY);
+      send(stored, false);
+    } catch (e) { /* ignore */ }
+  }
+
+  function track(type, props, name) {
+    if (optedOut()) return;
+    var path = location.pathname + location.search;
+    if (excluded(location.pathname)) return;
+
+    queue.push({
+      t: type,
+      n: name || null,
+      u: path,
+      r: document.referrer || null,
+      ts: new Date().toISOString(),
+      props: props || null
+    });
+
+    // Pageviews go out immediately so the live view is actually live;
+    // everything else batches.
+    if (type === 'pageview' || queue.length >= 20) flush(false);
+    else if (!flushTimer) flushTimer = setTimeout(function () { flush(false); }, 3000);
+  }
+
+  // ── Page lifecycle ────────────────────────────────────────
+
+  function utmParams() {
+    var params = new URLSearchParams(location.search);
+    var keys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'fbclid'];
+    var out = null;
+    for (var i = 0; i < keys.length; i++) {
+      var v = params.get(keys[i]);
+      if (v) { out = out || {}; out[keys[i]] = v; }
+    }
+    return out;
+  }
+
+  function pageview() {
+    var now = Date.now();
+    var path = location.pathname + location.search;
+
+    // Quick-back / pogosticking: they went somewhere, came straight back.
+    // The strongest single signal that the page they left had failed them.
+    if (lastPath && lastPath === path && now - lastPathAt < 10000) {
+      track('quick_back', { from: currentPath, seconds: Math.round((now - lastPathAt) / 1000) });
+    }
+
+    pageStart = now;
+    maxScroll = 0;
+    currentPath = path;
+    track('pageview', utmParams());
+  }
+
+  function endPage(useBeacon) {
+    if (formState.started && !formState.submitted) reportFormAbandon();
+
+    track('session_end', {
+      duration: Math.round((Date.now() - pageStart) / 1000),
+      scroll_depth: maxScroll,
+      path: currentPath
+    });
+    flush(useBeacon !== false);
+  }
+
+  function onRouteChange() {
+    var path = location.pathname + location.search;
+    if (path === currentPath) return;
+
+    endPage(false);
+    lastPath = currentPath;
+    lastPathAt = Date.now();
+    resetFormState();
+    pageview();
+  }
+
+  // ── Scroll depth ──────────────────────────────────────────
+  var scrollScheduled = false;
+  function onScroll() {
+    if (scrollScheduled) return;
+    scrollScheduled = true;
+    requestAnimationFrame(function () {
+      scrollScheduled = false;
+      var scrollable = document.documentElement.scrollHeight - window.innerHeight;
+      if (scrollable <= 0) { maxScroll = 100; return; }
+      var pct = Math.round((window.scrollY / scrollable) * 100);
+      if (pct > maxScroll) maxScroll = Math.min(pct, 100);
+    });
+  }
+
+  // ── Click handling: autocapture, rage clicks, dead clicks ─
+
+  var INTERACTIVE = 'a,button,input,select,textarea,label,summary,[role="button"],[role="link"],[role="tab"],[onclick],[data-track]';
+
+  function describe(el) {
+    var out = { tag: el.tagName };
+    var text = (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 60);
+    if (text) out.text = text;
+    if (el.id) out.id = el.id;
+    if (el.getAttribute('href')) out.href = el.getAttribute('href').slice(0, 300);
+    if (el.dataset && el.dataset.track) out.label = el.dataset.track;
+    var cls = (el.getAttribute('class') || '').trim().split(/\s+/).slice(0, 3).join(' ');
+    if (cls) out.classes = cls;
+    out.selector = selectorFor(el);
+    return out;
+  }
+
+  // A stable-enough selector so goals can be defined retroactively.
+  function selectorFor(el) {
+    if (el.id) return '#' + el.id;
+    var parts = [];
+    var node = el;
+    for (var depth = 0; node && node.nodeType === 1 && depth < 4; depth++) {
+      var part = node.tagName.toLowerCase();
+      if (node.getAttribute && node.getAttribute('data-track')) {
+        part += '[data-track="' + node.getAttribute('data-track') + '"]';
+        parts.unshift(part);
+        break;
+      }
+      var parent = node.parentElement;
+      if (parent) {
+        var siblings = Array.prototype.filter.call(parent.children, function (c) { return c.tagName === node.tagName; });
+        if (siblings.length > 1) part += ':nth-of-type(' + (siblings.indexOf(node) + 1) + ')';
+      }
+      parts.unshift(part);
+      node = parent;
+    }
+    return parts.join(' > ').slice(0, 200);
+  }
+
+  var recentClicks = [];
+
+  function onClick(event) {
+    var target = event.target;
+    if (!target || target.nodeType !== 1) return;
+
+    detectRageClick(event);
+
+    var interactive = target.closest ? target.closest(INTERACTIVE) : null;
+
+    if (interactive) {
+      if (AUTOCAPTURE) track('click', describe(interactive));
+    } else {
+      detectDeadClick(event, target);
+    }
+  }
+
+  function detectRageClick(event) {
+    var now = Date.now();
+    recentClicks.push({ x: event.clientX, y: event.clientY, t: now });
+    recentClicks = recentClicks.filter(function (c) { return now - c.t < 1000; });
+
+    if (recentClicks.length < 3) return;
+    var first = recentClicks[0];
+    var clustered = recentClicks.every(function (c) {
+      return Math.abs(c.x - first.x) < 30 && Math.abs(c.y - first.y) < 30;
+    });
+    if (!clustered) return;
+
+    track('rage_click', {
+      x: first.x, y: first.y,
+      count: recentClicks.length,
+      selector: selectorFor(event.target)
+    });
+    recentClicks = [];
+  }
+
+  /**
+   * A dead click is a click on something non-interactive that produced no
+   * reaction — no DOM change, no navigation, no network call. That is a user
+   * expecting something to be clickable when it is not.
+   */
+  function detectDeadClick(event, target) {
+    var pathBefore = location.pathname + location.search;
+    var mutated = false;
+
+    var observer;
+    try {
+      observer = new MutationObserver(function () { mutated = true; });
+      observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+    } catch (e) { return; }
+
+    setTimeout(function () {
+      observer.disconnect();
+      var navigated = (location.pathname + location.search) !== pathBefore;
+      if (mutated || navigated) return;
+      track('dead_click', {
+        x: event.clientX,
+        y: event.clientY,
+        selector: selectorFor(target),
+        text: (target.textContent || '').trim().slice(0, 60)
+      });
+    }, 1000);
+  }
+
+  // ── Forms ─────────────────────────────────────────────────
+  // Which field they were on when they gave up is the actionable part.
+
+  var formState = { started: false, submitted: false, name: null, lastField: null, fieldCount: 0 };
+
+  function resetFormState() {
+    formState = { started: false, submitted: false, name: null, lastField: null, fieldCount: 0 };
+  }
+
+  function fieldName(el) {
+    return el.getAttribute('name') || el.getAttribute('id') || el.getAttribute('placeholder') || el.type || 'unnamed';
+  }
+
+  function formNameOf(el) {
+    var form = el.form || (el.closest ? el.closest('form') : null);
+    if (!form) return '(no form)';
+    return form.getAttribute('name') || form.getAttribute('id') || form.getAttribute('action') || '(unnamed form)';
+  }
+
+  function onFocusIn(event) {
+    var el = event.target;
+    if (!el.tagName) return;
+    var tag = el.tagName.toLowerCase();
+    if (tag !== 'input' && tag !== 'select' && tag !== 'textarea') return;
+    if (el.type === 'hidden' || el.type === 'submit') return;
+
+    if (!formState.started) {
+      formState.started = true;
+      formState.name = formNameOf(el);
+      track('form_start', { form: formState.name, first_field: fieldName(el) });
+    }
+    formState.lastField = fieldName(el);
+    formState.fieldCount++;
+  }
+
+  function onSubmit(event) {
+    var form = event.target;
+    formState.submitted = true;
+    track('form_submit', {
+      form: form && form.getAttribute ? (form.getAttribute('name') || form.getAttribute('id') || '(unnamed form)') : '(unnamed form)',
+      fields_touched: formState.fieldCount
+    });
+  }
+
+  function reportFormAbandon() {
+    track('form_abandon', {
+      form: formState.name,
+      last_field: formState.lastField,
+      fields_touched: formState.fieldCount
+    });
+    formState.started = false;
+  }
+
+  // ── Errors ────────────────────────────────────────────────
+
+  function onError(event) {
+    track('js_error', {
+      message: String(event.message || 'Unknown error').slice(0, 500),
+      source: String(event.filename || '').slice(0, 300),
+      line: event.lineno || null,
+      column: event.colno || null,
+      stack: event.error && event.error.stack ? String(event.error.stack).slice(0, 2000) : null
+    });
+  }
+
+  function onRejection(event) {
+    var reason = event.reason;
+    track('js_error', {
+      message: ('Unhandled rejection: ' + (reason && reason.message ? reason.message : String(reason))).slice(0, 500),
+      source: null,
+      line: null,
+      column: null,
+      stack: reason && reason.stack ? String(reason.stack).slice(0, 2000) : null
+    });
+  }
+
+  // ── Core Web Vitals ───────────────────────────────────────
+  // performance.timing is deprecated and measures the wrong things. These are
+  // the metrics Google actually grades, reported once on page hide.
+
+  var vitals = {};
+
+  function observe(type, handler, opts) {
+    try {
+      var po = new PerformanceObserver(function (list) { list.getEntries().forEach(handler); });
+      po.observe(Object.assign({ type: type, buffered: true }, opts || {}));
+      return po;
+    } catch (e) { return null; }
+  }
+
+  function collectVitals() {
+    observe('largest-contentful-paint', function (entry) {
+      vitals.lcp = Math.round(entry.startTime);
+    });
+
+    observe('paint', function (entry) {
+      if (entry.name === 'first-contentful-paint') vitals.fcp = Math.round(entry.startTime);
+    });
+
+    var clsValue = 0;
+    observe('layout-shift', function (entry) {
+      if (!entry.hadRecentInput) {
+        clsValue += entry.value;
+        vitals.cls = Math.round(clsValue * 1000) / 1000;
+      }
+    });
+
+    // INP approximated by the worst interaction latency observed.
+    observe('event', function (entry) {
+      var duration = entry.duration;
+      if (duration > (vitals.inp || 0)) vitals.inp = Math.round(duration);
+    }, { durationThreshold: 40 });
+
+    try {
+      var nav = performance.getEntriesByType('navigation')[0];
+      if (nav) {
+        vitals.ttfb = Math.round(nav.responseStart);
+        vitals.dom_ready = Math.round(nav.domContentLoadedEventEnd);
+        vitals.load_time = Math.round(nav.loadEventEnd || nav.duration);
+      }
+    } catch (e) { /* ignore */ }
+  }
+
+  var vitalsSent = false;
+  function reportVitals() {
+    if (vitalsSent) return;
+    if (!Object.keys(vitals).length) return;
+    vitalsSent = true;
+    track('performance', vitals);
+  }
+
+  // ── Public API ────────────────────────────────────────────
+
+  function pulse(command) {
+    var args = Array.prototype.slice.call(arguments, 1);
+
+    switch (command) {
+      case 'event':
+        track('custom', args[1] || null, args[0]);
+        break;
+      case 'identify':
+        userId = args[0] ? String(args[0]).slice(0, 120) : null;
+        if (userId) track('identify', args[1] || null);
+        break;
+      case 'pageview':
+        pageview();
+        break;
+      case 'opt_out':
+        try { localStorage.setItem(OPT_OUT_KEY, '1'); } catch (e) { /* ignore */ }
+        break;
+      case 'opt_in':
+        try { localStorage.removeItem(OPT_OUT_KEY); } catch (e) { /* ignore */ }
+        break;
+      case 'flush':
+        flush(false);
+        break;
+      default:
+        break;
+    }
+  }
+
+  // Drain anything the page queued via the async stub before this file loaded.
+  var pending = (window.pulse && window.pulse.q) || [];
+  window.pulse = pulse;
+  for (var i = 0; i < pending.length; i++) pulse.apply(null, pending[i]);
+
+  // ── Wiring ────────────────────────────────────────────────
+
+  collectVitals();
+  flushRetries();
+  pageview();
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  document.addEventListener('click', onClick, true);
+  document.addEventListener('focusin', onFocusIn, true);
+  document.addEventListener('submit', onSubmit, true);
+  window.addEventListener('error', onError);
+  window.addEventListener('unhandledrejection', onRejection);
+
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden') { reportVitals(); endPage(true); }
+  });
+  // pagehide is the reliable unload signal on iOS Safari, where beforeunload never fires.
+  window.addEventListener('pagehide', function () { reportVitals(); endPage(true); });
+
+  // SPA route changes.
+  var pushState = history.pushState;
+  history.pushState = function () { pushState.apply(this, arguments); onRouteChange(); };
+  var replaceState = history.replaceState;
+  history.replaceState = function () { replaceState.apply(this, arguments); onRouteChange(); };
+  window.addEventListener('popstate', onRouteChange);
+  window.addEventListener('hashchange', onRouteChange);
+})(window, document);

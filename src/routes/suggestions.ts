@@ -1,30 +1,30 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { db } from '../db/index.js';
-import { sql } from 'drizzle-orm';
+import { suggestions } from '../db/schema.js';
 import { authMiddleware } from '../middleware/auth.js';
 import type { AppEnv } from '../lib/types.js';
 
-const suggestions = new Hono<AppEnv>();
+/**
+ * Users may submit feedback; only instance admins may read it.
+ * The read endpoint lives on /api/admin/suggestions — this router is
+ * deliberately write-only, because the previous GET here exposed every user's
+ * email address to any signed-in account.
+ */
+const router = new Hono<AppEnv>();
+router.use('*', authMiddleware);
 
-// Submit suggestion (authenticated)
-suggestions.post('/', authMiddleware, async (c) => {
-  const userId = c.get('userId');
-  const body = z.object({ message: z.string().min(1).max(2000) }).safeParse(await c.req.json());
+router.post('/', async (c) => {
+  const body = z.object({ message: z.string().min(1).max(2000) })
+    .safeParse(await c.req.json().catch(() => null));
   if (!body.success) return c.json({ error: 'Message required' }, 400);
 
-  await db.execute(sql`INSERT INTO suggestions (user_id, message) VALUES (${userId}, ${body.data.message})`);
-  return c.json({ success: true }, 201);
+  await db.insert(suggestions).values({
+    userId: c.get('userId'),
+    message: body.data.message,
+  });
+
+  return c.json({ ok: true }, 201);
 });
 
-// Get all suggestions (admin only — checked in admin route)
-suggestions.get('/', authMiddleware, async (c) => {
-  const rows = await db.execute(sql`
-    SELECT s.id, s.message, s.created_at, u.email, u.name
-    FROM suggestions s LEFT JOIN users u ON s.user_id = u.id
-    ORDER BY s.created_at DESC
-  `);
-  return c.json({ suggestions: rows });
-});
-
-export default suggestions;
+export default router;

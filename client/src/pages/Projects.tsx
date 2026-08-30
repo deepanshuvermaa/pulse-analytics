@@ -14,18 +14,43 @@ export default function Projects({ user, onLogout }: { user: any; onLogout: () =
   const [showSuggestion, setShowSuggestion] = useState(false);
   const [suggestion, setSuggestion] = useState('');
   const [suggestionSent, setSuggestionSent] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [timezone, setTimezone] = useState(
+    () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+  );
   const navigate = useNavigate();
 
   useEffect(() => {
     load();
     if (!localStorage.getItem('pulse_onboarded')) setShowOnboarding(true);
+    // Live counts go stale fast; refresh the list while the page is open.
+    const timer = setInterval(load, 30_000);
+    return () => clearInterval(timer);
   }, []);
-  async function load() { const r = await api.getProjects(); if (r.ok) { const data = (await r.json()).projects; setProjects(data); sessionStorage.setItem('pulse_projects', JSON.stringify(data)); } }
+
+  async function load() {
+    try {
+      const data = (await api.getProjects()).projects;
+      setProjects(data);
+      sessionStorage.setItem('pulse_projects', JSON.stringify(data));
+    } catch {
+      /* keep the cached list rather than blanking the page */
+    }
+  }
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    const r = await api.createProject({ name, domain });
-    if (r.ok) { setShowCreate(false); setName(''); setDomain(''); load(); }
+    setCreateError(null);
+    try {
+      // Default to the browser's zone — far more often right than UTC.
+      await api.createProject({ name, domain, timezone });
+      setShowCreate(false);
+      setName('');
+      setDomain('');
+      load();
+    } catch (err) {
+      setCreateError(err instanceof Error ? err.message : 'Could not create project');
+    }
   }
 
   return (
@@ -65,8 +90,16 @@ export default function Projects({ user, onLogout }: { user: any; onLogout: () =
               <label className="block text-xs font-semibold text-forest-muted uppercase tracking-wide mb-1.5">Domain</label>
               <input className="w-full px-4 py-2.5 rounded-lg border border-meadow-200 bg-meadow-50 text-sm focus:outline-none focus:border-meadow-500" placeholder="myapp.com" value={domain} onChange={e => setDomain(e.target.value)} required />
             </div>
+            <div className="flex-1 min-w-[180px]">
+              <label className="block text-xs font-semibold text-forest-muted uppercase tracking-wide mb-1.5">Timezone</label>
+              <input className="w-full px-4 py-2.5 rounded-lg border border-meadow-200 bg-meadow-50 text-sm focus:outline-none focus:border-meadow-500" value={timezone} onChange={e => setTimezone(e.target.value)} placeholder="Asia/Kolkata" required />
+            </div>
             <button type="submit" className="bg-meadow-600 hover:bg-meadow-700 text-white font-medium px-5 py-2.5 rounded-full text-sm">Create</button>
-            <button type="button" onClick={() => setShowCreate(false)} className="text-forest-muted hover:text-forest font-medium px-4 py-2.5 text-sm">Cancel</button>
+            <button type="button" onClick={() => { setShowCreate(false); setCreateError(null); }} className="text-forest-muted hover:text-forest font-medium px-4 py-2.5 text-sm">Cancel</button>
+            {createError && <p className="w-full text-xs text-red-600">{createError}</p>}
+            <p className="w-full text-[11px] text-forest-muted">
+              Every daily figure for this project is counted in the timezone you pick. It can be changed later in Setup.
+            </p>
           </form>
         )}
 
@@ -80,9 +113,22 @@ export default function Projects({ user, onLogout }: { user: any; onLogout: () =
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {projects.map(p => (
               <div key={p.id} onClick={() => navigate(`/dashboard/${p.id}`)} className="bg-white rounded-2xl p-5 border border-meadow-200 cursor-pointer hover:border-meadow-400 hover:-translate-y-0.5 transition-all group">
-                <h3 className="font-semibold text-forest group-hover:text-meadow-700 transition-colors">{p.name}</h3>
-                <p className="text-sm text-forest-muted mt-1">{p.domain}</p>
-                <p className="text-xs text-meadow-400 font-mono mt-3">{p.id}</p>
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="font-semibold text-forest group-hover:text-meadow-700 transition-colors truncate">{p.name}</h3>
+                  {p.liveVisitors > 0 && (
+                    <span className="shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold text-meadow-700 bg-meadow-100 px-2 py-0.5 rounded-full">
+                      <span className="w-1.5 h-1.5 rounded-full bg-meadow-500 animate-pulse" />
+                      {p.liveVisitors}
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm text-forest-muted mt-1 truncate">{p.domain}</p>
+                <div className="flex items-center justify-between mt-3">
+                  <p className="text-xs text-meadow-400 font-mono">{p.id}</p>
+                  <p className="text-[11px] text-forest-muted">
+                    {p.lastEventAt ? `active ${new Date(p.lastEventAt).toLocaleDateString()}` : 'no data yet'}
+                  </p>
+                </div>
               </div>
             ))}
           </div>
@@ -103,7 +149,7 @@ export default function Projects({ user, onLogout }: { user: any; onLogout: () =
               {suggestionSent ? (
                 <div className="text-center py-4"><p className="text-meadow-600 font-semibold">Thanks! We received your suggestion. 🎉</p></div>
               ) : (
-                <form onSubmit={async (e) => { e.preventDefault(); const r = await fetch('/api/suggestions', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` }, body: JSON.stringify({ message: suggestion }) }); if (r.ok) { setSuggestionSent(true); setSuggestion(''); } }}>
+                <form onSubmit={async (e) => { e.preventDefault(); try { await api.sendSuggestion(suggestion); setSuggestionSent(true); setSuggestion(''); } catch { /* leave the text for a retry */ } }}>
                   <textarea className="w-full px-4 py-3 rounded-xl border border-meadow-200 bg-meadow-50 text-sm focus:outline-none focus:border-meadow-500 resize-none h-28" placeholder="I wish Pulse could..." value={suggestion} onChange={e => setSuggestion(e.target.value)} required />
                   <button type="submit" className="mt-3 w-full bg-forest hover:bg-forest-light text-white font-semibold py-2.5 rounded-full transition-colors flex items-center justify-center gap-2 text-sm"><Send className="w-4 h-4" /> Submit</button>
                 </form>
