@@ -50,6 +50,9 @@ app.get('/t.js', async (c, next) => {
 app.get('/t.js', serveStatic({ path: './public/t.js' }));
 app.get('/pulsehero.mp4', serveStatic({ path: './public/pulsehero.mp4' }));
 
+// Lightweight readiness endpoint — returns 200 as soon as the app process is up.
+app.get('/ready', (c) => c.text('ok', 200));
+
 app.route('/api/auth', auth);
 app.route('/api/collect', collect);
 app.route('/api/projects', projectsRouter);
