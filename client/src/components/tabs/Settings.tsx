@@ -33,7 +33,12 @@ export default function Settings({ projectId, state, canEdit, isOwner, onProject
   return (
     <div className="space-y-6">
       <SetupStatus projectId={projectId} />
-      <Snippet snippet={detail.data.snippet} project={project} serverExample={detail.data.serverExample} />
+      <Snippet
+        snippet={detail.data.snippet}
+        asyncSnippet={detail.data.asyncSnippet}
+        project={project}
+        serverExample={detail.data.serverExample}
+      />
       <ProjectSettings project={project} canEdit={canEdit} onSaved={() => { detail.reload(); onProjectChange(); }} />
       <Goals projectId={projectId} state={state} canEdit={canEdit} />
       <Alerts projectId={projectId} canEdit={canEdit} />
@@ -136,11 +141,24 @@ function CopyBox({ value, label }: { value: string; label?: string }) {
   );
 }
 
-function Snippet({ snippet, project, serverExample }: { snippet: string; project: any; serverExample: string }) {
+function Snippet({ snippet, asyncSnippet, project, serverExample }: {
+  snippet: string;
+  asyncSnippet: string;
+  project: any;
+  serverExample: string;
+}) {
   return (
     <Panel title="Tracking snippet">
       <div className="p-5 space-y-5">
         <CopyBox value={snippet} label="Paste inside <head>" />
+
+        <CopyBox
+          value={asyncSnippet}
+          label="Use this version instead if you call pulse() from your own code"
+        />
+        <p className="text-[11px] text-forest-muted -mt-3">
+          The stub queues calls made before the tracker finishes loading, so early events are not dropped.
+        </p>
 
         <div className="bg-meadow-50 rounded-xl p-4 text-xs text-forest space-y-1.5">
           <p className="font-semibold">Works with React, Next.js, Vue, Svelte, WordPress, Webflow, plain HTML.</p>

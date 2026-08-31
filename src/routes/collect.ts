@@ -139,23 +139,34 @@ collect.post('/', async (c) => {
   const ip = clientIp(headers);
   if (project.excludedIps.includes(ip)) return c.body(null, 204);
 
-  const identity = await resolveVisitor({
-    projectId: project.id,
-    ip,
-    userAgent,
-    durableId: body.d ?? null,
-    userId: body.uid ?? null,
-    identityMode: project.identityMode,
-  });
+  // Identity, sessionisation and rate limiting all live in Redis. If it is
+  // unreachable we answer 503 rather than inventing an identity — the tracker
+  // persists the batch to localStorage on a non-2xx and replays it later, so
+  // the data is delayed rather than lost or misattributed.
+  let identity: Awaited<ReturnType<typeof resolveVisitor>>;
+  let sessionId: string;
+  try {
+    identity = await resolveVisitor({
+      projectId: project.id,
+      ip,
+      userAgent,
+      durableId: body.d ?? null,
+      userId: body.uid ?? null,
+      identityMode: project.identityMode,
+    });
 
-  const allowed = await rateLimit(
-    `rl:${project.id}:${identity.visitorId}`,
-    env.RATE_LIMIT_EVENTS,
-    env.RATE_LIMIT_WINDOW_SEC,
-  );
-  if (!allowed) return c.body(null, 429);
+    const allowed = await rateLimit(
+      `rl:${project.id}:${identity.visitorId}`,
+      env.RATE_LIMIT_EVENTS,
+      env.RATE_LIMIT_WINDOW_SEC,
+    );
+    if (!allowed) return c.body(null, 429);
 
-  const { sessionId } = await resolveSession(project.id, identity.visitorId);
+    ({ sessionId } = await resolveSession(project.id, identity.visitorId));
+  } catch (e) {
+    console.error('[collect] identity unavailable:', e instanceof Error ? e.message : e);
+    return c.body(null, 503);
+  }
 
   const country = countryFrom(headers);
   const region = regionFrom(headers);
@@ -206,7 +217,14 @@ collect.post('/', async (c) => {
     if (event.type === 'pageview') livePath = path;
   }
 
-  if (livePath !== null) await touchLive(project.id, identity.visitorId, livePath);
+  // Live counts are cosmetic — never fail an accepted event over them.
+  if (livePath !== null) {
+    try {
+      await touchLive(project.id, identity.visitorId, livePath);
+    } catch {
+      /* ignore */
+    }
+  }
 
   return c.body(null, 204);
 });

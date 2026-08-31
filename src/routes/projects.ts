@@ -143,7 +143,11 @@ router.get('/:id', async (c) => {
     project: present(project, role),
     role,
     snippet: snippetFor(origin, project),
-    npmSnippet: `import { pulse } from '@pulse/js';\n\npulse.init({ projectId: '${project.id}', host: '${origin}' });`,
+    // Async stub: lets application code call pulse() before the tracker has
+    // finished loading, instead of dropping those early events.
+    asyncSnippet:
+      `<script>window.pulse=window.pulse||function(){(pulse.q=pulse.q||[]).push(arguments)}</script>\n` +
+      snippetFor(origin, project),
     serverExample:
       `curl -X POST ${origin}/api/collect/server \\\n` +
       `  -H "Authorization: Bearer ${role === 'owner' || role === 'admin' ? project.writeKey : '<write key>'}" \\\n` +

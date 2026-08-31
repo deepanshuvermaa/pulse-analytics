@@ -25,6 +25,9 @@ import { startAlertWorker, stopAlertWorker } from './workers/alerts.js';
 
 const app = new Hono();
 
+/** Exposed on /health and /ready so a stuck deploy is diagnosable from outside. */
+const startupState: { phase: string; error: string | null } = { phase: 'starting', error: null };
+
 app.use('*', logger());
 
 // The collector is called cross-origin from every customer site, so it is open
@@ -50,9 +53,6 @@ app.get('/t.js', async (c, next) => {
 app.get('/t.js', serveStatic({ path: './public/t.js' }));
 app.get('/pulsehero.mp4', serveStatic({ path: './public/pulsehero.mp4' }));
 
-// Lightweight readiness endpoint — returns 200 as soon as the app process is up.
-app.get('/ready', (c) => c.text('ok', 200));
-
 app.route('/api/auth', auth);
 app.route('/api/collect', collect);
 app.route('/api/projects', projectsRouter);
@@ -64,30 +64,65 @@ app.route('/api/share', share);
 app.route('/api/admin', admin);
 app.route('/api/suggestions', suggestions);
 
-app.get('/health', async (c) => {
+/**
+ * Liveness. Deliberately dependency-free and always 200 while the process runs.
+ *
+ * This is what the platform healthcheck hits. Gating it on Redis and Postgres
+ * meant a transient dependency blip failed the deploy and rolled the release
+ * back, which is exactly backwards: the app can still serve cached pages and
+ * queue events while a dependency recovers.
+ */
+app.get('/health', (c) =>
+  c.json({
+    status: 'ok',
+    startup: startupState.phase,
+    uptimeSeconds: Math.round(process.uptime()),
+    timestamp: new Date().toISOString(),
+  }),
+);
+
+/** Readiness — 503 until migrations have finished, for rolling deploys. */
+app.get('/ready', (c) =>
+  startupState.phase === 'ready'
+    ? c.json({ status: 'ready' })
+    : c.json({ status: startupState.phase, error: startupState.error }, 503),
+);
+
+/** Deep check for humans and uptime monitors. Never used to gate a deploy. */
+app.get('/health/deep', async (c) => {
+  const withTimeout = <T,>(p: Promise<T>, ms: number) =>
+    Promise.race([p, new Promise<never>((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
+
   const checks: Record<string, string> = {};
   let healthy = true;
 
   try {
-    await redis.ping();
+    await withTimeout(redis.ping(), 3000);
     checks.redis = 'ok';
-  } catch {
-    checks.redis = 'unreachable';
+  } catch (e) {
+    checks.redis = e instanceof Error ? e.message : 'unreachable';
     healthy = false;
   }
 
   try {
     const { db } = await import('./db/index.js');
     const { sql } = await import('drizzle-orm');
-    await db.execute(sql`SELECT 1`);
+    await withTimeout(db.execute(sql`SELECT 1`), 5000);
     checks.database = 'ok';
-  } catch {
-    checks.database = 'unreachable';
+  } catch (e) {
+    checks.database = e instanceof Error ? e.message : 'unreachable';
     healthy = false;
   }
 
+  let queue = -1;
+  try {
+    queue = await withTimeout(queueDepth(), 3000);
+  } catch {
+    /* reported as -1 */
+  }
+
   return c.json(
-    { status: healthy ? 'ok' : 'degraded', checks, ingestQueue: await queueDepth(), timestamp: new Date().toISOString() },
+    { status: healthy ? 'ok' : 'degraded', startup: startupState.phase, checks, ingestQueue: queue, timestamp: new Date().toISOString() },
     healthy ? 200 : 503,
   );
 });
@@ -99,17 +134,42 @@ if (env.IS_PROD) {
   app.get('/*', serveStatic({ path: './dist/client/index.html' }));
 }
 
+/**
+ * Startup runs *after* the port is bound, so a slow migration or an unreachable
+ * dependency can never stop the process from answering a healthcheck.
+ */
+async function initialise(): Promise<void> {
+  try {
+    startupState.phase = 'connecting-redis';
+    await connectRedis(); // never throws; degrades instead
+
+    startupState.phase = 'migrating';
+    // Schema migrations can take minutes on a large events table.
+    await initDB();
+
+    startupState.phase = 'starting-workers';
+    startIngestWorker();
+    startRollupWorker();
+    startAlertWorker();
+
+    startupState.phase = 'ready';
+    console.log('✓ Startup complete — workers running');
+  } catch (e) {
+    startupState.phase = 'failed';
+    startupState.error = e instanceof Error ? e.message : String(e);
+    // Stay alive and keep serving /health so the failure is visible in logs and
+    // on /ready, instead of crash-looping with no diagnostics.
+    console.error('Startup failed:', e);
+  }
+}
+
 async function main(): Promise<void> {
-  await connectRedis();
-  await initDB();
-
-  startIngestWorker();
-  startRollupWorker();
-  startAlertWorker();
-
-  const server = serve({ fetch: app.fetch, port: env.PORT }, (info) => {
-    console.log(`🚀 Pulse Analytics on http://localhost:${info.port} (${env.NODE_ENV})`);
+  // Bind first. Everything else happens in the background.
+  const server = serve({ fetch: app.fetch, port: env.PORT, hostname: '0.0.0.0' }, (info) => {
+    console.log(`🚀 Pulse Analytics listening on 0.0.0.0:${info.port} (${env.NODE_ENV})`);
   });
+
+  void initialise();
 
   let shuttingDown = false;
   const shutdown = async (signal: string) => {

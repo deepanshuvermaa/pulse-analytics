@@ -1,8 +1,21 @@
 import 'dotenv/config';
 
+/**
+ * Missing configuration is collected and reported all at once.
+ *
+ * Throwing from module scope on the first missing variable produced a container
+ * that died before binding a port, so the platform healthcheck only ever
+ * reported "service unavailable" with no clue why. Now the process names every
+ * missing variable on stderr before exiting.
+ */
+const missing: string[] = [];
+
 function required(name: string): string {
   const v = process.env[name];
-  if (!v) throw new Error(`Missing required env var: ${name}`);
+  if (!v) {
+    missing.push(name);
+    return '';
+  }
   return v;
 }
 
@@ -74,3 +87,12 @@ export const env = {
   CACHE_TTL_OPEN: int('CACHE_TTL_OPEN', 60),
   CACHE_TTL_CLOSED: int('CACHE_TTL_CLOSED', 3600),
 } as const;
+
+if (missing.length) {
+  console.error(
+    `\nFATAL: missing required environment variable${missing.length > 1 ? 's' : ''}:\n` +
+      missing.map((m) => `  - ${m}`).join('\n') +
+      `\n\nSet ${missing.length > 1 ? 'them' : 'it'} in your deployment environment and redeploy.\n`,
+  );
+  process.exit(1);
+}

@@ -3,7 +3,12 @@ builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
 [deploy]
+# /health is liveness only — it answers as soon as the port is bound and never
+# depends on Postgres or Redis. Schema migrations run in the background after
+# binding, so a long migration cannot fail the deploy.
 healthcheckPath = "/health"
-healthcheckTimeout = 30
+# Generous anyway: the first boot on an existing database converts the events
+# table to monthly partitions, and the container should not be killed mid-copy.
+healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
