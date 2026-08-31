@@ -136,7 +136,7 @@ export async function summary(projectId: string, range: DayRange, filters: Filte
       COALESCE(SUM(s.error_count), 0)                 AS errors
     FROM sessions s
     WHERE s.project_id = ${projectId}
-      AND s.started_at >= ${range.from} AND s.started_at < ${range.to}
+      AND s.started_at >= ${range.fromIso}::timestamptz AND s.started_at < ${range.toIso}::timestamptz
       AND ${sessionConditions(filters)}
   `);
 
@@ -210,7 +210,7 @@ export async function timeseries(
            COUNT(*) FILTER (WHERE s.converted) AS conversions
     FROM sessions s
     WHERE s.project_id = ${projectId}
-      AND s.started_at >= ${range.from} AND s.started_at < ${range.to}
+      AND s.started_at >= ${range.fromIso}::timestamptz AND s.started_at < ${range.toIso}::timestamptz
       AND ${sessionConditions(filters)}
     GROUP BY 1 ORDER BY 1
   `);
@@ -264,7 +264,7 @@ export async function pages(
       SELECT e.path, COUNT(DISTINCT e.visitor_id) AS visitors
       FROM events e
       WHERE e.project_id = ${projectId} AND e.type = 'pageview'
-        AND e.timestamp >= ${range.from} AND e.timestamp < ${range.to}
+        AND e.timestamp >= ${range.fromIso}::timestamptz AND e.timestamp < ${range.toIso}::timestamptz
         AND e.path IS NOT NULL
       GROUP BY e.path
     `);
@@ -279,7 +279,7 @@ export async function pages(
              LEAD(e.timestamp) OVER (PARTITION BY e.session_id ORDER BY e.timestamp, e.id) - e.timestamp AS gap
       FROM events e
       WHERE e.project_id = ${projectId} AND e.type = 'pageview' AND e.path IS NOT NULL
-        AND e.timestamp >= ${range.from} AND e.timestamp < ${range.to}
+        AND e.timestamp >= ${range.fromIso}::timestamptz AND e.timestamp < ${range.toIso}::timestamptz
         AND ${eventConditions(filters, projectId)}
     ),
     page_agg AS (
@@ -297,7 +297,7 @@ export async function pages(
              COUNT(*) AS scroll_samples
       FROM sessions s
       WHERE s.project_id = ${projectId}
-        AND s.started_at >= ${range.from} AND s.started_at < ${range.to}
+        AND s.started_at >= ${range.fromIso}::timestamptz AND s.started_at < ${range.toIso}::timestamptz
         AND s.entry_path IS NOT NULL AND ${sessionConditions(filters)}
       GROUP BY s.entry_path
     ),
@@ -305,7 +305,7 @@ export async function pages(
       SELECT s.exit_path AS path, COUNT(*) AS exits
       FROM sessions s
       WHERE s.project_id = ${projectId}
-        AND s.started_at >= ${range.from} AND s.started_at < ${range.to}
+        AND s.started_at >= ${range.fromIso}::timestamptz AND s.started_at < ${range.toIso}::timestamptz
         AND s.exit_path IS NOT NULL AND ${sessionConditions(filters)}
       GROUP BY s.exit_path
     )
@@ -399,7 +399,7 @@ export async function breakdown(
            COUNT(*) FILTER (WHERE s.converted) AS conversions
     FROM sessions s
     WHERE s.project_id = ${projectId}
-      AND s.started_at >= ${range.from} AND s.started_at < ${range.to}
+      AND s.started_at >= ${range.fromIso}::timestamptz AND s.started_at < ${range.toIso}::timestamptz
       AND ${col} IS NOT NULL AND ${col} <> ''
       AND ${sessionConditions(filters)}
     GROUP BY ${col}
@@ -434,7 +434,7 @@ export async function customEvents(projectId: string, range: DayRange, filters: 
            COUNT(DISTINCT e.session_id) AS sessions
     FROM events e
     WHERE e.project_id = ${projectId} AND e.type = 'custom' AND e.name IS NOT NULL
-      AND e.timestamp >= ${range.from} AND e.timestamp < ${range.to}
+      AND e.timestamp >= ${range.fromIso}::timestamptz AND e.timestamp < ${range.toIso}::timestamptz
       AND ${eventConditions(filters, projectId)}
     GROUP BY e.name
     ORDER BY count DESC
@@ -470,7 +470,7 @@ export async function performance(projectId: string, range: DayRange, filters: F
         PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY ${metricExpr(vital)}) AS p99
       FROM events e
       WHERE e.project_id = ${projectId} AND e.type = 'performance'
-        AND e.timestamp >= ${range.from} AND e.timestamp < ${range.to}
+        AND e.timestamp >= ${range.fromIso}::timestamptz AND e.timestamp < ${range.toIso}::timestamptz
         AND e.payload ? ${vital}
         AND ${eventConditions(filters, projectId)}
     `);
@@ -491,7 +491,7 @@ export async function performance(projectId: string, range: DayRange, filters: F
            PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY (e.payload->>'ttfb')::numeric) AS p75_ttfb
     FROM events e
     WHERE e.project_id = ${projectId} AND e.type = 'performance' AND e.path IS NOT NULL
-      AND e.timestamp >= ${range.from} AND e.timestamp < ${range.to}
+      AND e.timestamp >= ${range.fromIso}::timestamptz AND e.timestamp < ${range.toIso}::timestamptz
       AND e.payload ? 'lcp'
       AND ${eventConditions(filters, projectId)}
     GROUP BY e.path

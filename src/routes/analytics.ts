@@ -251,7 +251,7 @@ analytics.get('/:projectId/errors', async (c) => {
              count, affected_sessions, first_seen_at, last_seen_at, resolved
       FROM error_groups
       WHERE project_id = ${project.id}
-        AND last_seen_at >= ${range.from} AND last_seen_at < ${range.to}
+        AND last_seen_at >= ${range.fromIso}::timestamptz AND last_seen_at < ${range.toIso}::timestamptz
         ${includeResolved ? sql`` : sql`AND resolved = FALSE`}
       ORDER BY count DESC
       LIMIT 100
@@ -261,7 +261,7 @@ analytics.get('/:projectId/errors', async (c) => {
       SELECT COALESCE(SUM(count), 0) AS total, COUNT(*) AS groups
       FROM error_groups
       WHERE project_id = ${project.id}
-        AND last_seen_at >= ${range.from} AND last_seen_at < ${range.to}
+        AND last_seen_at >= ${range.fromIso}::timestamptz AND last_seen_at < ${range.toIso}::timestamptz
     `)) as unknown as Array<Record<string, unknown>>;
 
     return {

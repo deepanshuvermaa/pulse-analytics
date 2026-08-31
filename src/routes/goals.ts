@@ -87,7 +87,7 @@ router.get('/:projectId/report', async (c) => {
     SELECT COUNT(*) AS sessions, COUNT(DISTINCT s.visitor_id) AS visitors
     FROM sessions s
     WHERE s.project_id = ${project.id}
-      AND s.started_at >= ${range.from} AND s.started_at < ${range.to}
+      AND s.started_at >= ${range.fromIso}::timestamptz AND s.started_at < ${range.toIso}::timestamptz
       AND ${sessionConditions(filters)}
   `)) as unknown as Array<Record<string, unknown>>;
 
@@ -101,7 +101,7 @@ router.get('/:projectId/report', async (c) => {
     FROM goals g
     LEFT JOIN sessions s
       ON s.project_id = ${project.id}
-     AND s.started_at >= ${range.from} AND s.started_at < ${range.to}
+     AND s.started_at >= ${range.fromIso}::timestamptz AND s.started_at < ${range.toIso}::timestamptz
      AND ${sessionConditions(filters)}
     WHERE g.project_id = ${project.id}
     GROUP BY g.id

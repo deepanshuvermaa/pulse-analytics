@@ -49,6 +49,13 @@ export const env = {
   ADMIN_EMAIL: process.env.ADMIN_EMAIL || '',
 
   /**
+   * Commit actually running, surfaced on /health. Railway injects
+   * RAILWAY_GIT_COMMIT_SHA; without this there is no way to tell a fixed
+   * deployment from a stale image serving the old code.
+   */
+  GIT_SHA: (process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_SHA || 'unknown').slice(0, 12),
+
+  /**
    * Server-side secret mixed into the daily visitor salt. Rotating this
    * invalidates all cookieless visitor identities immediately.
    */

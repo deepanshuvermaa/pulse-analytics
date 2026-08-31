@@ -36,6 +36,17 @@ export interface DayRange {
   from: Date;
   /** Absolute UTC instant of 00:00:00.000 on the day *after* toDate (exclusive). */
   to: Date;
+  /**
+   * The same two instants as ISO strings.
+   *
+   * Queries bind these with an explicit `::timestamptz` cast rather than passing
+   * the Date objects. How a driver serialises a JS Date depends on the parameter
+   * OID the server happens to report, which is an invisible dependency that has
+   * already broken this codebase once. An ISO string plus an explicit cast means
+   * exactly one interpretation, no matter what sits between us and Postgres.
+   */
+  fromIso: string;
+  toIso: string;
 }
 
 export interface ResolvedRange extends DayRange {
@@ -215,11 +226,15 @@ export function autoGranularity(days: number): Granularity {
 }
 
 function toDayRange(fromDate: string, toDate: string, tz: string): DayRange {
+  const from = dayStart(fromDate, tz);
+  const to = dayEndExclusive(toDate, tz);
   return {
     fromDate,
     toDate,
-    from: dayStart(fromDate, tz),
-    to: dayEndExclusive(toDate, tz),
+    from,
+    to,
+    fromIso: from.toISOString(),
+    toIso: to.toISOString(),
   };
 }
 

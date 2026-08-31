@@ -70,7 +70,7 @@ async function upsertErrorGroups(batch: QueuedEvent[]): Promise<void> {
     const p = (e.payload ?? {}) as ErrorPayload;
     const message = String(p.message || 'Unknown error').slice(0, 2000);
     const fingerprint = errorFingerprint(message, p.source, p.line);
-    const ts = new Date(e.timestamp);
+    const iso = new Date(e.timestamp).toISOString();
 
     // Count a session once per error group, tracked in Redis with a 2-day TTL.
     const seenKey = `errseen:${e.projectId}:${fingerprint}`;
@@ -84,7 +84,7 @@ async function upsertErrorGroups(batch: QueuedEvent[]): Promise<void> {
       ) VALUES (
         ${e.projectId}, ${fingerprint}, ${message}, ${p.source?.slice(0, 512) ?? null},
         ${p.line ?? null}, ${p.column ?? null}, ${p.stack?.slice(0, 4000) ?? null},
-        ${e.path}, 1, ${isNewSession ? 1 : 0}, ${ts}, ${ts}
+        ${e.path}, 1, ${isNewSession ? 1 : 0}, ${iso}::timestamptz, ${iso}::timestamptz
       )
       ON CONFLICT (project_id, fingerprint) DO UPDATE SET
         count = error_groups.count + 1,
@@ -112,7 +112,7 @@ async function touchProjectWatermarks(batch: QueuedEvent[]): Promise<void> {
       .update(projects)
       .set({
         lastEventAt: ts,
-        firstEventAt: sql`COALESCE(${projects.firstEventAt}, ${ts})`,
+        firstEventAt: sql`COALESCE(${projects.firstEventAt}, ${ts.toISOString()}::timestamptz)`,
       })
       .where(eq(projects.id, projectId));
   }

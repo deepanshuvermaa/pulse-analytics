@@ -99,7 +99,7 @@ function buildChain(projectId: string, range: DayRange, filters: Filters, steps:
       FROM events e
       JOIN sessions s ON s.project_id = ${projectId} AND s.session_id = e.session_id
       WHERE e.project_id = ${projectId}
-        AND e.timestamp >= ${range.from} AND e.timestamp < ${range.to}
+        AND e.timestamp >= ${range.fromIso}::timestamptz AND e.timestamp < ${range.toIso}::timestamptz
         AND ${stepPredicate(steps[0])}
         AND ${segment}
       GROUP BY e.visitor_id
@@ -221,7 +221,7 @@ async function funnelBreakdown(
       SELECT DISTINCT ON (s.visitor_id) s.visitor_id, ${column} AS value
       FROM sessions s
       WHERE s.project_id = ${projectId}
-        AND s.started_at >= ${range.from} AND s.started_at < ${range.to}
+        AND s.started_at >= ${range.fromIso}::timestamptz AND s.started_at < ${range.toIso}::timestamptz
       ORDER BY s.visitor_id, s.started_at ASC
     )`;
 

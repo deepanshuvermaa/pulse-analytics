@@ -75,6 +75,7 @@ app.route('/api/suggestions', suggestions);
 app.get('/health', (c) =>
   c.json({
     status: 'ok',
+    version: env.GIT_SHA,
     startup: startupState.phase,
     uptimeSeconds: Math.round(process.uptime()),
     timestamp: new Date().toISOString(),
