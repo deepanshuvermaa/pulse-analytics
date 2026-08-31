@@ -11,18 +11,34 @@
  */
 
 import type { Sql } from 'postgres';
+import { randomBytes } from 'node:crypto';
 
 const MIGRATION_LOCK = 918_273_645;
 
 export async function runMigrations(sql: Sql): Promise<void> {
   await sql`SELECT pg_advisory_lock(${MIGRATION_LOCK})`;
   try {
-    await createCoreTables(sql);
-    await upgradeLegacyColumns(sql);
-    await convertEventsToPartitioned(sql);
-    await createAnalyticsTables(sql);
-    await ensurePartitions(sql);
-    await backfillProjectDefaults(sql);
+    // Table creation comes first and the optional upgrades come after, so a
+    // failure in a backfill can never leave the application without the tables
+    // it needs to answer a single query.
+    const phases: Array<[string, (s: Sql) => Promise<void>]> = [
+      ['create-core-tables', createCoreTables],
+      ['create-analytics-tables', createAnalyticsTables],
+      ['upgrade-legacy-columns', upgradeLegacyColumns],
+      ['partition-events', convertEventsToPartitioned],
+      ['ensure-partitions', (s) => ensurePartitions(s)],
+      ['backfill-project-defaults', backfillProjectDefaults],
+    ];
+
+    for (const [name, run] of phases) {
+      try {
+        await run(sql);
+      } catch (e) {
+        // Name the phase — a bare driver error gives no clue which step failed.
+        const message = e instanceof Error ? e.message : String(e);
+        throw new Error(`migration phase "${name}" failed: ${message}`, { cause: e });
+      }
+    }
   } finally {
     await sql`SELECT pg_advisory_unlock(${MIGRATION_LOCK})`;
   }
@@ -101,12 +117,20 @@ async function upgradeLegacyColumns(sql: Sql): Promise<void> {
     DROP TABLE IF EXISTS daily_dimensions;
   `);
 
-  // Every project needs a write key; generate for any that predate the column.
-  await sql.unsafe(`
-    UPDATE projects
-       SET write_key = 'wk_' || encode(gen_random_bytes(24), 'hex')
-     WHERE write_key IS NULL;
-  `);
+  // Every project needs a write key; generate one for any that predate the column.
+  //
+  // Generated in Node, not SQL: gen_random_bytes() lives in the pgcrypto
+  // extension, which is not installed on a stock managed Postgres. (gen_random_uuid()
+  // is built in from PG13 and is fine.) Depending on it aborted this migration
+  // before the analytics tables were created.
+  const needKeys = (await sql.unsafe(
+    `SELECT id FROM projects WHERE write_key IS NULL`,
+  )) as unknown as Array<{ id: string }>;
+
+  for (const row of needKeys) {
+    await sql`UPDATE projects SET write_key = ${'wk_' + randomBytes(24).toString('hex')} WHERE id = ${row.id}`;
+  }
+
   await sql.unsafe(`
     ALTER TABLE projects ALTER COLUMN write_key SET NOT NULL;
     CREATE UNIQUE INDEX IF NOT EXISTS idx_projects_write_key ON projects(write_key);
