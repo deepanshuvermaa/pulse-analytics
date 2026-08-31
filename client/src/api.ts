@@ -146,8 +146,21 @@ export const api = {
   createAlert: (id: string, data: unknown) => json(`/alerts/${id}`, { method: 'POST', body: JSON.stringify(data) }),
   deleteAlert: (id: string, alertId: string) => json(`/alerts/${id}/${alertId}`, { method: 'DELETE' }),
 
+  // API keys — read-only programmatic / AI-agent access
+  getApiKeys: (id: string) => json(`/projects/${id}/api-keys`),
+  createApiKey: (id: string, name: string) =>
+    json(`/projects/${id}/api-keys`, { method: 'POST', body: JSON.stringify({ name }) }),
+  revokeApiKey: (id: string, keyId: string) =>
+    json(`/projects/${id}/api-keys/${keyId}`, { method: 'DELETE' }),
+
   // Admin
   adminStats: () => json('/admin/stats'),
+  adminProjects: (search?: string) =>
+    json(`/admin/projects${search ? `?search=${encodeURIComponent(search)}` : ''}`),
+  adminUser: (userId: string) => json(`/admin/users/${userId}`),
+  adminSetUserRole: (userId: string, role: string) =>
+    json(`/admin/users/${userId}`, { method: 'PATCH', body: JSON.stringify({ role }) }),
+  adminActivity: (days = 30) => json(`/admin/activity?days=${days}`),
   adminUsers: () => json('/admin/users'),
   adminHealth: () => json('/admin/health'),
   adminSuggestions: () => json('/admin/suggestions'),

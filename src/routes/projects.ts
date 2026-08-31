@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { randomBytes } from 'node:crypto';
 import { db } from '../db/index.js';
-import { projects, projectMembers, users } from '../db/schema.js';
+import { projects, projectMembers, users, apiKeys } from '../db/schema.js';
 import { and, count, eq, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import bcrypt from 'bcryptjs';
@@ -12,6 +12,7 @@ import { isValidTimezone } from '../lib/time.js';
 import { liveCounts } from '../lib/redis.js';
 import { invalidateProject } from '../lib/cache.js';
 import { invalidateProjectConfig } from './collect.js';
+import { generateKey } from '../lib/api-keys.js';
 import { env } from '../config.js';
 import type { AppEnv, Project } from '../lib/types.js';
 
@@ -375,6 +376,66 @@ router.post('/:id/share', requireProject('admin'), async (c) => {
     .where(eq(projects.id, project.id));
 
   return c.json({ shareSlug: slug, url: `${baseOrigin(c.req.url)}/share/${slug}` });
+});
+
+// ─────────────────────────────────────────────────────────────
+// API keys — read-only programmatic / AI-agent access
+// ─────────────────────────────────────────────────────────────
+
+router.get('/:id/api-keys', requireProject('admin'), async (c) => {
+  const project = c.get('project');
+  const rows = await db.query.apiKeys.findMany({
+    where: eq(apiKeys.projectId, project.id),
+    orderBy: (k, { desc }) => [desc(k.createdAt)],
+  });
+  // The secret itself is unrecoverable by design; only the prefix is shown.
+  return c.json({
+    keys: rows.map((k) => ({
+      id: k.id,
+      name: k.name,
+      prefix: k.prefix,
+      lastUsedAt: k.lastUsedAt,
+      revokedAt: k.revokedAt,
+      createdAt: k.createdAt,
+    })),
+  });
+});
+
+router.post('/:id/api-keys', requireProject('admin'), async (c) => {
+  const project = c.get('project');
+  const body = z.object({ name: z.string().min(1).max(120) })
+    .safeParse(await c.req.json().catch(() => null));
+  if (!body.success) return c.json({ error: body.error.flatten() }, 400);
+
+  const generated = generateKey();
+  const [row] = await db.insert(apiKeys).values({
+    projectId: project.id,
+    name: body.data.name,
+    keyHash: generated.hash,
+    prefix: generated.prefix,
+    createdBy: c.get('userId'),
+  }).returning();
+
+  return c.json({
+    key: { id: row.id, name: row.name, prefix: row.prefix, createdAt: row.createdAt },
+    // Returned exactly once — we store only the hash.
+    plaintext: generated.plaintext,
+    warning: 'Copy this now. It cannot be shown again.',
+    usage: {
+      curl: `curl -H "Authorization: Bearer ${generated.plaintext}" ${baseOrigin(c.req.url)}/api/v1/insights`,
+      mcp: `See mcp/README.md — set PULSE_API_KEY and PULSE_HOST to connect an AI assistant.`,
+    },
+  }, 201);
+});
+
+router.delete('/:id/api-keys/:keyId', requireProject('admin'), async (c) => {
+  const project = c.get('project');
+  const [revoked] = await db.update(apiKeys)
+    .set({ revokedAt: sql`NOW()` })
+    .where(and(eq(apiKeys.id, c.req.param('keyId') ?? ''), eq(apiKeys.projectId, project.id)))
+    .returning();
+  if (!revoked) return c.json({ error: 'Not found' }, 404);
+  return c.json({ ok: true });
 });
 
 // ─────────────────────────────────────────────────────────────

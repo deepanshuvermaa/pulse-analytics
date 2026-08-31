@@ -359,6 +359,29 @@ export const alerts = pgTable('alerts', {
   projectIdx: index('idx_alerts_project').on(t.projectId),
 }));
 
+/**
+ * Read-only API keys, so a customer can point an AI agent (or any script) at
+ * their own analytics without logging into the dashboard.
+ *
+ * Only a hash is stored — the plaintext key is shown once at creation and is
+ * unrecoverable afterwards. `prefix` is the first few visible characters, kept
+ * so the UI can identify a key in a list without holding the secret.
+ */
+export const apiKeys = pgTable('api_keys', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  projectId: varchar('project_id', { length: 24 }).notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  name: varchar('name', { length: 120 }).notNull(),
+  keyHash: varchar('key_hash', { length: 64 }).notNull(),
+  prefix: varchar('prefix', { length: 16 }).notNull(),
+  createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+  lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
+  revokedAt: timestamp('revoked_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  hashIdx: uniqueIndex('idx_api_keys_hash').on(t.keyHash),
+  projectIdx: index('idx_api_keys_project').on(t.projectId),
+}));
+
 export const suggestions = pgTable('suggestions', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),

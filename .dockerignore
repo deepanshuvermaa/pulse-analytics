@@ -17,3 +17,6 @@ Thumbs.db
 coverage
 *.docx
 README.md
+
+# MCP server is published separately; the API image does not run it.
+mcp

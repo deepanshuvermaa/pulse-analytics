@@ -40,6 +40,7 @@ export default function Settings({ projectId, state, canEdit, isOwner, onProject
         serverExample={detail.data.serverExample}
       />
       <ProjectSettings project={project} canEdit={canEdit} onSaved={() => { detail.reload(); onProjectChange(); }} />
+      {isOwner && <ApiKeys projectId={projectId} />}
       <Goals projectId={projectId} state={state} canEdit={canEdit} />
       <Alerts projectId={projectId} canEdit={canEdit} />
       {isOwner && <Team projectId={projectId} />}
@@ -362,6 +363,142 @@ function ProjectSettings({ project, canEdit, onSaved }: { project: any; canEdit:
             {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save settings'}
           </button>
         )}
+      </div>
+    </Panel>
+  );
+}
+
+/**
+ * Read-only API keys — the "connect your AI" surface.
+ *
+ * The plaintext key is shown exactly once, on creation, because only its hash is
+ * stored. Losing it means issuing a new one.
+ */
+function ApiKeys({ projectId }: { projectId: string }) {
+  const list = useAsync(() => api.getApiKeys(projectId), [projectId]);
+  const [name, setName] = useState('');
+  const [created, setCreated] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const host = window.location.origin;
+
+  async function create() {
+    if (!name.trim()) return setError('Give the key a name so you can recognise it later.');
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await api.createApiKey(projectId, name.trim());
+      setCreated(res);
+      setName('');
+      list.reload();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not create key');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function revoke(keyId: string) {
+    if (!confirm('Revoke this key? Anything using it stops working immediately.')) return;
+    await api.revokeApiKey(projectId, keyId);
+    list.reload();
+  }
+
+  return (
+    <Panel title="API keys & AI access">
+      <div className="p-5 space-y-5">
+        <p className="text-sm text-forest-muted">
+          Give an AI assistant or a script read-only access to this project's analytics, so you can ask
+          "what's broken?" without opening the dashboard. Keys are read-only — they cannot change
+          settings, send events, or reach any other project.
+        </p>
+
+        <div className="flex flex-wrap gap-2">
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') create(); }}
+            placeholder="Key name, e.g. Claude Desktop"
+            className="flex-1 min-w-[200px] px-3 py-2 rounded-lg border border-meadow-200 bg-meadow-50 text-sm focus:outline-none focus:border-meadow-500"
+          />
+          <button
+            onClick={create}
+            disabled={busy}
+            className="bg-forest hover:bg-forest-light disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-full inline-flex items-center gap-2"
+          >
+            <Plus className="w-3.5 h-3.5" /> Create key
+          </button>
+        </div>
+        {error && <p className="text-xs text-red-600">{error}</p>}
+
+        {created && (
+          <div className="bg-meadow-50 border border-meadow-300 rounded-xl p-4 space-y-3">
+            <p className="text-sm font-semibold text-forest">
+              Copy this key now — it cannot be shown again.
+            </p>
+            <CopyBox value={created.plaintext} />
+            <CopyBox label="Try it" value={created.usage?.curl ?? ''} />
+            <button onClick={() => setCreated(null)} className="text-xs text-forest-muted hover:text-forest underline">
+              Done, hide it
+            </button>
+          </div>
+        )}
+
+        <DataTable
+          rows={list.data?.keys ?? []}
+          keyOf={(k: any) => k.id}
+          empty={<EmptyState icon={KeyRound} title="No API keys yet" hint="Create one to connect an AI assistant or your own scripts." />}
+          columns={[
+            { key: 'name', header: 'Name', render: (k: any) => <span className="font-medium text-forest">{k.name}</span> },
+            { key: 'prefix', header: 'Key', render: (k: any) => <code className="text-xs text-forest-muted">{k.prefix}…</code> },
+            {
+              key: 'used',
+              header: 'Last used',
+              render: (k: any) => (k.lastUsedAt ? new Date(k.lastUsedAt).toLocaleString() : <span className="text-forest-muted">never</span>),
+            },
+            {
+              key: 'status',
+              header: 'Status',
+              render: (k: any) => (k.revokedAt ? <Pill tone="bad">revoked</Pill> : <Pill tone="good">active</Pill>),
+            },
+            {
+              key: 'actions',
+              header: '',
+              align: 'right',
+              render: (k: any) =>
+                k.revokedAt ? null : (
+                  <button onClick={() => revoke(k.id)} className="text-forest-muted hover:text-red-600" aria-label="Revoke key">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                ),
+            },
+          ]}
+        />
+
+        <div className="border-t border-meadow-100 pt-4 space-y-3">
+          <h4 className="text-xs font-semibold text-forest-muted uppercase tracking-wide">Connect an AI assistant (MCP)</h4>
+          <p className="text-xs text-forest-muted">
+            Add this to your Claude Desktop config, then ask it things like
+            "what's hurting conversion on my site this week?".
+          </p>
+          <CopyBox
+            value={JSON.stringify({
+              mcpServers: {
+                pulse: {
+                  command: 'npx',
+                  args: ['-y', 'pulse-analytics-mcp'],
+                  env: { PULSE_HOST: host, PULSE_API_KEY: created?.plaintext ?? 'pk_your_key_here' },
+                },
+              },
+            }, null, 2)}
+          />
+          <p className="text-xs text-forest-muted">
+            Prefer plain HTTP? Every endpoint is documented at{' '}
+            <code className="bg-meadow-50 px-1.5 py-0.5 rounded">GET {host}/api/v1/</code> — call it with your key
+            and it describes itself.
+          </p>
+        </div>
       </div>
     </Panel>
   );

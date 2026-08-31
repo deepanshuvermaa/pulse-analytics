@@ -18,6 +18,7 @@ import alertsRouter from './routes/alerts.js';
 import share from './routes/share.js';
 import admin from './routes/admin.js';
 import suggestions from './routes/suggestions.js';
+import v1 from './routes/v1.js';
 
 import { startIngestWorker, stopIngestWorker } from './workers/ingest.js';
 import { startRollupWorker, stopRollupWorker } from './workers/rollup.js';
@@ -63,6 +64,10 @@ app.route('/api/alerts', alertsRouter);
 app.route('/api/share', share);
 app.route('/api/admin', admin);
 app.route('/api/suggestions', suggestions);
+
+// Read-only public API for scripts and AI agents, keyed per project.
+app.use('/api/v1/*', cors({ origin: '*', credentials: false, allowMethods: ['GET', 'OPTIONS'] }));
+app.route('/api/v1', v1);
 
 /**
  * Liveness. Deliberately dependency-free and always 200 while the process runs.

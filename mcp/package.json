@@ -1,0 +1,15 @@
+{
+  "name": "pulse-analytics-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for Pulse Analytics — read-only access to your own site analytics from an AI assistant.",
+  "type": "module",
+  "bin": { "pulse-analytics-mcp": "./index.js" },
+  "main": "index.js",
+  "files": ["index.js", "README.md"],
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "keywords": ["mcp", "analytics", "claude"],
+  "license": "MIT"
+}
