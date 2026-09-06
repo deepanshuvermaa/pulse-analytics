@@ -13,7 +13,7 @@ import {
 import { exitPages, exitReasons, flow, segmentLift, frustrationByPage, formAbandonment, retention } from '../lib/insights.js';
 import { buildDigest } from '../lib/digest.js';
 import { computeFunnel } from '../lib/funnel-engine.js';
-import { funnels } from '../db/schema.js';
+import { funnels, goals, alerts } from '../db/schema.js';
 import type { Project } from '../lib/types.js';
 
 /**
@@ -237,6 +237,85 @@ v1.get('/funnels/:funnelId', async (c) => {
   } catch (e) {
     return c.json({ error: e instanceof Error ? e.message : 'Funnel computation failed' }, 400);
   }
+});
+
+// ─────────────────────────────────────────────────────────────
+// Goals / alerts / live — short reads for the AI-agent surface.
+// ─────────────────────────────────────────────────────────────
+
+v1.get('/goals', async (c) => {
+  const project = c.get('project');
+  const rows = await db.query.goals.findMany({ where: eq(goals.projectId, project.id) });
+  return c.json({
+    goals: rows.map((g) => ({
+      id: g.id, name: g.name, kind: g.kind, matchValue: g.matchValue,
+      matchType: g.matchType, value: g.value, createdAt: g.createdAt,
+    })),
+  });
+});
+
+v1.get('/alerts', async (c) => {
+  const project = c.get('project');
+  const rows = await db.query.alerts.findMany({ where: eq(alerts.projectId, project.id) });
+  return c.json({
+    alerts: rows.map((a) => ({
+      id: a.id, name: a.name, kind: a.kind, threshold: a.threshold,
+      enabled: a.enabled, lastFiredAt: a.lastFiredAt, createdAt: a.createdAt,
+    })),
+  });
+});
+
+v1.get('/live', async (c) => {
+  const project = c.get('project');
+  const { liveCount, livePages: pages } = await import('../lib/redis.js');
+  const [visitors, pathRows] = await Promise.all([liveCount(project.id), pages(project.id)]);
+  return c.json({ liveVisitors: visitors, pages: pathRows, fetchedAt: new Date().toISOString() });
+});
+
+/** The "show me everything I might want on the audience tab" composite. */
+v1.get('/audience', async (c) => {
+  const { project, range, filters } = ctx(c);
+  const [channels, sources, referrers, devices, browsers, oses, countries] = await Promise.all([
+    breakdown(project.id, range, filters, 'channel', 12),
+    breakdown(project.id, range, filters, 'source', 25),
+    breakdown(project.id, range, filters, 'referrer', 25),
+    breakdown(project.id, range, filters, 'device', 5),
+    breakdown(project.id, range, filters, 'browser', 12),
+    breakdown(project.id, range, filters, 'os', 12),
+    breakdown(project.id, range, filters, 'country', 30),
+  ]);
+  return c.json({
+    range: rangeMeta(range),
+    channels, sources, referrers, devices, browsers, operatingSystems: oses, countries,
+  });
+});
+
+v1.get('/heatmap', async (c) => {
+  const project = c.get('project');
+  const path = c.req.query('path');
+  if (!path) return c.json({ error: 'path query parameter is required' }, 400);
+  const q = c.req.query.bind(c.req);
+  const range = resolveRange({ preset: q('preset'), from: q('from'), to: q('to') }, project.timezone);
+  const sample = Math.min(Number(q('sample')) || 5000, 20_000);
+
+  const rows = (await db.execute(sql`
+    SELECT (payload->>'dx')::float AS dx, (payload->>'dy')::float AS dy,
+           (payload->>'vw')::float AS vw, (payload->>'vh')::float AS vh
+    FROM events
+    WHERE project_id = ${project.id} AND type = 'click' AND path = ${path}
+      AND timestamp >= ${range.fromIso}::timestamptz AND timestamp < ${range.toIso}::timestamptz
+    ORDER BY RANDOM() LIMIT ${sample}
+  `)) as unknown as Array<Record<string, unknown>>;
+
+  const points = rows.map((r) => {
+    const dx = Number(r.dx ?? 0);
+    const dy = Number(r.dy ?? 0);
+    const vw = Math.max(Number(r.vw ?? 0), 1);
+    const vh = Math.max(Number(r.vh ?? 0), 1);
+    return { x: Math.max(0, Math.min(1, dx / vw)), y: Math.max(0, Math.min(1, dy / vh)) };
+  }).filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y));
+
+  return c.json({ range: rangeMeta(range), path, sample: points.length, points });
 });
 
 export default v1;

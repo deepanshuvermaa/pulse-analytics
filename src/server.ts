@@ -19,6 +19,8 @@ import share from './routes/share.js';
 import admin from './routes/admin.js';
 import suggestions from './routes/suggestions.js';
 import v1 from './routes/v1.js';
+import payments from './routes/payments.js';
+import mcpServer from './mcp/server.js';
 
 import { startIngestWorker, stopIngestWorker } from './workers/ingest.js';
 import { startRollupWorker, stopRollupWorker } from './workers/rollup.js';
@@ -68,6 +70,7 @@ app.route('/api/suggestions', suggestions);
 // Read-only public API for scripts and AI agents, keyed per project.
 app.use('/api/v1/*', cors({ origin: '*', credentials: false, allowMethods: ['GET', 'OPTIONS'] }));
 app.route('/api/v1', v1);
+app.route('/api/payments', payments);
 
 /**
  * Liveness. Deliberately dependency-free and always 200 while the process runs.
@@ -202,5 +205,15 @@ main().catch((e) => {
   console.error('Fatal startup error:', e);
   process.exit(1);
 });
+
+app.use('/mcp/*', cors({ origin: '*', credentials: false, allowMethods: ['GET', 'POST', 'OPTIONS'] }));
+app.route('/mcp', mcpServer);
+
+/**
+ * Expose the app on `globalThis` so the in-process MCP server can dispatch
+ * sub-requests to /api/v1/* without going over the network. Set here, after
+ * every route is mounted, so the dispatcher sees the full surface.
+ */
+(globalThis as { __pulseApp?: { fetch: (r: Request) => Promise<Response> | Response } }).__pulseApp = app as unknown as { fetch: (r: Request) => Promise<Response> | Response };
 
 export default app;

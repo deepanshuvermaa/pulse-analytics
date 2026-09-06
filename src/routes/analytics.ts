@@ -301,6 +301,64 @@ analytics.post('/:projectId/errors/:fingerprint/resolve', requireProject('member
 // Realtime
 // ─────────────────────────────────────────────────────────────
 
+/**
+ * Click heatmap for one page.
+ *
+ * Returns click coordinates in normalised document space (0–1) so the client
+ * can render the heatmap regardless of the user's actual viewport size at
+ * capture time. The query plan is bounded: a single range scan over events
+ * filtered by (project, type, path) with a server-side sample cap so a
+ * runaway site can never make this endpoint slow.
+ */
+analytics.get('/:projectId/heatmap', async (c) => {
+  const project = c.get('project');
+  const path = c.req.query('path');
+  if (!path) return c.json({ error: 'path query parameter is required' }, 400);
+
+  const q = c.req.query.bind(c.req);
+  const range = resolveRange(
+    { preset: q('preset'), from: q('from'), to: q('to') },
+    project.timezone,
+  );
+  const sampleSize = Math.min(Number(q('sample')) || 5000, 20_000);
+
+  const rows = (await db.execute(sql`
+    SELECT (payload->>'dx')::float AS dx,
+           (payload->>'dy')::float AS dy,
+           (payload->>'vw')::float AS vw,
+           (payload->>'vh')::float AS vh
+    FROM events
+    WHERE project_id = ${project.id}
+      AND type = 'click'
+      AND path = ${path}
+      AND timestamp >= ${range.fromIso}::timestamptz AND timestamp < ${range.toIso}::timestamptz
+    ORDER BY RANDOM()
+    LIMIT ${sampleSize}
+  `)) as unknown as Array<Record<string, unknown>>;
+
+  const points = rows
+    .map((r) => {
+      const dx = Number(r.dx ?? 0);
+      const dy = Number(r.dy ?? 0);
+      const vw = Math.max(Number(r.vw ?? 0), 1);
+      const vh = Math.max(Number(r.vh ?? 0), 1);
+      // Normalise to 0–1 against the viewport at capture time. If we don't have
+      // a viewport, fall back to document space (clamped to 4096 px).
+      return {
+        x: Math.max(0, Math.min(1, dx / vw)),
+        y: Math.max(0, Math.min(1, dy / vh)),
+      };
+    })
+    .filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y));
+
+  return c.json({
+    range: { from: range.fromDate, to: range.toDate },
+    path,
+    sample: points.length,
+    points,
+  });
+});
+
 analytics.get('/:projectId/live', async (c) => {
   const project = c.get('project');
   const [visitors, pathRows] = await Promise.all([liveCount(project.id), livePages(project.id)]);

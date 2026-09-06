@@ -280,7 +280,19 @@
     var interactive = target.closest ? target.closest(INTERACTIVE) : null;
 
     if (interactive) {
-      if (AUTOCAPTURE) track('click', describe(interactive));
+      if (AUTOCAPTURE) {
+        var props = describe(interactive);
+        // Coordinates relative to the viewport and document — enough to
+        // reconstruct a heatmap without storing the DOM tree.
+        props.vx = Math.round(event.clientX || 0);
+        props.vy = Math.round(event.clientY || 0);
+        var docEl = document.documentElement;
+        props.dx = Math.round(((event.clientX || 0) + window.scrollX) || 0);
+        props.dy = Math.round(((event.clientY || 0) + window.scrollY) || 0);
+        props.vw = docEl.clientWidth || window.innerWidth;
+        props.vh = docEl.clientHeight || window.innerHeight;
+        track('click', props);
+      }
     } else {
       detectDeadClick(event, target);
     }

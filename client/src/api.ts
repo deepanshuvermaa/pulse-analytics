@@ -123,6 +123,8 @@ export const api = {
   live: (id: string) => json(`/analytics/${id}/live`),
   resolveError: (id: string, fingerprint: string, resolved: boolean) =>
     json(`/analytics/${id}/errors/${fingerprint}/resolve?resolved=${resolved}`, { method: 'POST' }),
+  heatmap: (id: string, path: string, q: Query = {}) =>
+    json(`/analytics/${id}/heatmap${toQueryString({ ...q, path })}`),
   exportUrl: (id: string, report: string, q: Query = {}) =>
     `${API}/analytics/${id}/export${toQueryString({ ...q, report, format: 'csv' })}`,
 
@@ -131,6 +133,11 @@ export const api = {
   createGoal: (id: string, data: unknown) => json(`/goals/${id}`, { method: 'POST', body: JSON.stringify(data) }),
   deleteGoal: (id: string, goalId: string) => json(`/goals/${id}/${goalId}`, { method: 'DELETE' }),
   goalReport: (id: string, q: Query = {}) => json(`/goals/${id}/report${toQueryString(q)}`),
+
+  // Revenue
+  revenueOverview: (id: string, q: Query = {}) => json(`/payments/${id}/overview${toQueryString(q)}`),
+  revenueTimeseries: (id: string, q: Query = {}) => json(`/payments/${id}/timeseries${toQueryString(q)}`),
+  revenueChannels: (id: string, q: Query = {}) => json(`/payments/${id}/channels${toQueryString(q)}`),
 
   // Funnels
   getFunnels: (id: string) => json(`/funnels/${id}`),
