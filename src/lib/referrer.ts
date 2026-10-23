@@ -18,6 +18,7 @@ export type Channel =
   | 'Affiliate'
   | 'Display'
   | 'Video'
+  | 'AI Assistant'
   | 'Other';
 
 /** host suffix → canonical display name */
@@ -69,6 +70,20 @@ const SOURCES: Array<[string, string]> = [
   ['stackoverflow.com', 'Stack Overflow'],
   ['dev.to', 'DEV'],
   ['producthunt.com', 'Product Hunt'],
+  // AI assistants — `gemini.google.com` outranks the generic `google.` rule by length
+  ['chatgpt.com', 'ChatGPT'],
+  ['chat.openai.com', 'ChatGPT'],
+  ['perplexity.ai', 'Perplexity'],
+  ['gemini.google.com', 'Gemini'],
+  ['bard.google.com', 'Gemini'],
+  ['copilot.microsoft.com', 'Copilot'],
+  ['claude.ai', 'Claude'],
+  ['deepseek.com', 'DeepSeek'],
+  ['meta.ai', 'Meta AI'],
+  ['grok.com', 'Grok'],
+  ['chat.mistral.ai', 'Mistral'],
+  ['phind.com', 'Phind'],
+  ['poe.com', 'Poe'],
   // Mail
   ['mail.google.com', 'Gmail'],
   ['outlook.live.com', 'Outlook'],
@@ -88,6 +103,10 @@ const SOCIAL_SOURCES = new Set([
 ]);
 
 const VIDEO_SOURCES = new Set(['YouTube', 'Vimeo', 'Twitch']);
+const AI_SOURCES = new Set([
+  'ChatGPT', 'Perplexity', 'Gemini', 'Copilot', 'Claude', 'DeepSeek', 'Meta AI',
+  'Grok', 'Mistral', 'Phind', 'Poe',
+]);
 const EMAIL_SOURCES = new Set(['Gmail', 'Outlook', 'Yahoo Mail']);
 
 const PAID_MEDIUMS = new Set(['cpc', 'ppc', 'paidsearch', 'paid-search', 'sem', 'adwords']);
@@ -164,6 +183,14 @@ export function classify(referrer: string | null | undefined, utm: UtmSet = {}):
   // Click ids are unambiguous paid signals.
   if (utm.gclid || utm.msclkid) return { host, source, channel: 'Paid Search' };
   if (utm.fbclid && medium && PAID_SOCIAL_MEDIUMS.has(medium)) return { host, source, channel: 'Paid Social' };
+
+  // AI answers often arrive without a referrer but with a tagged link (ChatGPT appends
+  // utm_source=chatgpt.com), so check both and report one canonical source per assistant.
+  const utmAi = utmSource ? canonicalSource(parseHost(utmSource)) : null;
+  const aiSource = [refSource, utmAi].find((s) => s && AI_SOURCES.has(s));
+  if (aiSource && !PAID_MEDIUMS.has(medium) && !PAID_SOCIAL_MEDIUMS.has(medium)) {
+    return { host, source: aiSource, channel: 'AI Assistant' };
+  }
 
   if (medium) {
     if (PAID_MEDIUMS.has(medium)) return { host, source, channel: 'Paid Search' };

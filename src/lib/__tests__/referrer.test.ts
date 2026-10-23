@@ -55,6 +55,29 @@ describe('channel grouping', () => {
   it('classifies an unknown external site as a referral', () => {
     expect(classify('https://some-blog.example/post').channel).toBe('Referral');
   });
+
+  it('groups AI assistant visits into their own channel', () => {
+    expect(classify('https://chatgpt.com/')).toMatchObject({ source: 'ChatGPT', channel: 'AI Assistant' });
+    expect(classify('https://chat.openai.com/c/abc')).toMatchObject({ source: 'ChatGPT', channel: 'AI Assistant' });
+    expect(classify('https://www.perplexity.ai/search/x')).toMatchObject({ source: 'Perplexity', channel: 'AI Assistant' });
+    expect(classify('https://claude.ai/chat/1')).toMatchObject({ source: 'Claude', channel: 'AI Assistant' });
+  });
+
+  it('does not count Gemini as Google organic search', () => {
+    expect(classify('https://gemini.google.com/app')).toMatchObject({ source: 'Gemini', channel: 'AI Assistant' });
+    expect(classify('https://google.com/search').channel).toBe('Organic Search');
+  });
+
+  it('recognises tagged AI links that arrive without a referrer', () => {
+    // ChatGPT appends utm_source=chatgpt.com to the links it cites.
+    expect(classify(null, { source: 'chatgpt.com' })).toMatchObject({ source: 'ChatGPT', channel: 'AI Assistant' });
+    expect(classify(null, { source: 'newsletter' }).channel).not.toBe('AI Assistant');
+  });
+
+  it('still treats paid clicks from AI surfaces as paid', () => {
+    expect(classify('https://chatgpt.com/', { gclid: 'abc' }).channel).toBe('Paid Search');
+    expect(classify('https://chatgpt.com/', { medium: 'cpc' }).channel).toBe('Paid Search');
+  });
 });
 
 describe('self referral detection', () => {
