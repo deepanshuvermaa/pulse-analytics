@@ -389,6 +389,65 @@ export const suggestions = pgTable('suggestions', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
+/** One row per person per project, merged across every source that found them. */
+export const leads = pgTable('leads', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  projectId: varchar('project_id', { length: 24 }).notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  /** Digits with country code ("919876543210") — the identity used for merging. */
+  phone: varchar('phone', { length: 16 }),
+  email: varchar('email', { length: 255 }),
+  name: varchar('name', { length: 120 }),
+  businessName: varchar('business_name', { length: 200 }),
+  businessType: varchar('business_type', { length: 80 }),
+  city: varchar('city', { length: 80 }),
+  address: varchar('address', { length: 500 }),
+  website: varchar('website', { length: 500 }),
+  message: text('message'),
+  /** Source of the first touch; `sources` lists every source seen since. */
+  source: varchar('source', { length: 40 }).notNull(),
+  sources: text('sources').array().default([]).notNull(),
+  /** Ids in source systems ("maps_scraper:42") so re-syncs merge instead of adding touches. */
+  refs: text('refs').array().default([]).notNull(),
+  /** new | contacted | qualified | won | lost | junk */
+  status: varchar('status', { length: 16 }).default('new').notNull(),
+  score: integer('score').default(0).notNull(),
+  touches: integer('touches').default(1).notNull(),
+  notes: text('notes'),
+  /** First-touch web attribution, when the lead came through a tracked site. */
+  channel: varchar('channel', { length: 32 }),
+  referrerSource: varchar('referrer_source', { length: 120 }),
+  landingPath: varchar('landing_path', { length: 1024 }),
+  utmSource: varchar('utm_source', { length: 120 }),
+  utmMedium: varchar('utm_medium', { length: 120 }),
+  utmCampaign: varchar('utm_campaign', { length: 120 }),
+  sessionId: varchar('session_id', { length: 40 }),
+  visitorId: varchar('visitor_id', { length: 40 }),
+  attributes: jsonb('attributes').default({}).notNull(),
+  firstSeenAt: timestamp('first_seen_at', { withTimezone: true }).notNull(),
+  lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  lastSeenIdx: index('idx_leads_project_last_seen').on(t.projectId, t.lastSeenAt),
+  statusScoreIdx: index('idx_leads_project_status_score').on(t.projectId, t.status, t.score),
+}));
+
+/** Timeline of a lead: every touch, status change and note. */
+export const leadEvents = pgTable('lead_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  leadId: uuid('lead_id').notNull().references(() => leads.id, { onDelete: 'cascade' }),
+  projectId: varchar('project_id', { length: 24 }).notNull(),
+  /** touch | status | note */
+  kind: varchar('kind', { length: 16 }).notNull(),
+  source: varchar('source', { length: 40 }),
+  ref: varchar('ref', { length: 120 }),
+  detail: jsonb('detail'),
+  actorId: uuid('actor_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  leadIdx: index('idx_lead_events_lead').on(t.leadId, t.createdAt),
+}));
+
 /** Bookkeeping so the rollup worker knows what it has already materialised. */
 export const rollupState = pgTable('rollup_state', {
   projectId: varchar('project_id', { length: 24 }).notNull(),

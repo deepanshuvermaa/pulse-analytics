@@ -81,6 +81,15 @@ export const env = {
   SESSION_TIMEOUT_SEC: int('SESSION_TIMEOUT_SEC', 30 * 60),
 
   /** Per-visitor collector rate limit. */
+  /** Optional Slack/Discord-compatible webhook pinged when a lead turns hot. */
+  LEADS_WEBHOOK_URL: process.env.LEADS_WEBHOOK_URL || '',
+  /** ZeroBuild agency API, for building client websites from leads. */
+  ZEROBUILD_URL: process.env.ZEROBUILD_URL || '',
+  ZEROBUILD_TOKEN: process.env.ZEROBUILD_TOKEN || '',
+  /** Telegram bot (from @BotFather) and the chat it messages, for hot-lead alerts on a phone. */
+  LEADS_TELEGRAM_BOT_TOKEN: process.env.LEADS_TELEGRAM_BOT_TOKEN || '',
+  LEADS_TELEGRAM_CHAT_ID: process.env.LEADS_TELEGRAM_CHAT_ID || '',
+
   RATE_LIMIT_EVENTS: int('RATE_LIMIT_EVENTS', 240),
   RATE_LIMIT_WINDOW_SEC: int('RATE_LIMIT_WINDOW_SEC', 60),
 

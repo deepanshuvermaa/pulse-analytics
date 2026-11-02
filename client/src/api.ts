@@ -139,6 +139,52 @@ export const api = {
   revenueTimeseries: (id: string, q: Query = {}) => json(`/payments/${id}/timeseries${toQueryString(q)}`),
   revenueChannels: (id: string, q: Query = {}) => json(`/payments/${id}/channels${toQueryString(q)}`),
 
+  // Lead hub
+  getLeads: (id: string, q: Query = {}) => json(`/leads/${id}${toQueryString(q)}`),
+  leadSummary: (id: string) => json(`/leads/${id}/summary`),
+  getLead: (id: string, leadId: string) => json(`/leads/${id}/${leadId}`),
+  updateLead: (id: string, leadId: string, data: { status?: string; notes?: string | null }) =>
+    json(`/leads/${id}/${leadId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  addLead: (id: string, data: Record<string, string>) =>
+    json(`/leads/${id}`, { method: 'POST', body: JSON.stringify(data) }),
+  // Client websites (ZeroBuild)
+  getSites: (id: string) => json(`/sites/${id}`),
+  createSite: (id: string, data: unknown) => json(`/sites/${id}`, { method: 'POST', body: JSON.stringify(data) }),
+  deploySite: (id: string, siteId: string, data: unknown) =>
+    json(`/sites/${id}/${siteId}/deploy`, { method: 'POST', body: JSON.stringify(data) }),
+  syncCatalog: (id: string, siteId: string, products: unknown[]) =>
+    json(`/sites/${id}/${siteId}/catalog`, { method: 'PUT', body: JSON.stringify({ products }) }),
+  downloadSite: async (id: string, siteId: string, siteUrl = '') => {
+    const res = await request(`/sites/${id}/${siteId}/download${siteUrl ? `?siteUrl=${encodeURIComponent(siteUrl)}` : ''}`);
+    if (!res.ok) throw new Error(`Download failed (${res.status})`);
+    const url = URL.createObjectURL(await res.blob());
+    Object.assign(document.createElement('a'), { href: url, download: 'site.zip' }).click();
+    URL.revokeObjectURL(url);
+  },
+
+  // Agency PC jobs (voice calls, hunts …)
+  queueJob: (id: string, kind: string, params: Record<string, unknown> = {}) =>
+    json(`/agency/${id}/jobs`, { method: 'POST', body: JSON.stringify({ kind, params }) }),
+  getJobs: (id: string, q: Query = {}) => json(`/agency/${id}/jobs${toQueryString(q)}`),
+
+  // Hunt plans
+  getHunts: (id: string) => json(`/hunts/${id}`),
+  createHunt: (id: string, data: unknown) => json(`/hunts/${id}`, { method: 'POST', body: JSON.stringify(data) }),
+  updateHunt: (id: string, planId: string, data: unknown) =>
+    json(`/hunts/${id}/${planId}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteHunt: (id: string, planId: string) => json(`/hunts/${id}/${planId}`, { method: 'DELETE' }),
+  previewPlaces: (id: string, data: { regions: string[]; maxPerRegion?: number; includeTowns?: boolean }) =>
+    json(`/hunts/${id}/preview-places`, { method: 'POST', body: JSON.stringify(data) }),
+  /** Authenticated download — a plain link can't carry the bearer token. */
+  exportLeads: async (id: string, q: Query = {}) => {
+    const res = await request(`/leads/${id}/export${toQueryString(q)}`);
+    if (!res.ok) throw new Error(`Export failed (${res.status})`);
+    const url = URL.createObjectURL(await res.blob());
+    const a = Object.assign(document.createElement('a'), { href: url, download: `leads-${new Date().toISOString().slice(0, 10)}.csv` });
+    a.click();
+    URL.revokeObjectURL(url);
+  },
+
   // Funnels
   getFunnels: (id: string) => json(`/funnels/${id}`),
   createFunnel: (id: string, data: unknown) => json(`/funnels/${id}`, { method: 'POST', body: JSON.stringify(data) }),

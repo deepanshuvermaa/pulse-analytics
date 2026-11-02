@@ -14,6 +14,9 @@ import Heatmap from '../components/tabs/Heatmap';
 import Goals from '../components/tabs/Goals';
 import Alerts from '../components/tabs/Alerts';
 import Revenue from '../components/tabs/Revenue';
+import Leads from '../components/tabs/Leads';
+import Hunts from '../components/tabs/Hunts';
+import Sites from '../components/tabs/Sites';
 import { Pages, Sources, Performance, Errors, Retention } from '../components/tabs/Reports';
 
 const TABS = [
@@ -25,6 +28,9 @@ const TABS = [
   { key: 'sources', label: 'Sources' },
   { key: 'heatmap', label: 'Heatmap' },
   { key: 'revenue', label: 'Revenue' },
+  { key: 'leads', label: 'Leads' },
+  { key: 'hunts', label: 'Hunts' },
+  { key: 'sites', label: 'Sites' },
   { key: 'performance', label: 'Performance' },
   { key: 'errors', label: 'Errors' },
   { key: 'goals', label: 'Goals' },
@@ -109,6 +115,9 @@ export default function Dashboard({ user, onLogout }: { user: any; onLogout: () 
         {tab === 'sources' && <Sources projectId={id} state={state} />}
         {tab === 'heatmap' && <Heatmap projectId={id} state={state} />}
         {tab === 'revenue' && <Revenue projectId={id} state={state} />}
+        {tab === 'leads' && <Leads projectId={id} canEdit={canEdit} />}
+        {tab === 'hunts' && <Hunts projectId={id} canEdit={canEdit} />}
+        {tab === 'sites' && <Sites projectId={id} canEdit={canEdit} />}
         {tab === 'performance' && <Performance projectId={id} state={state} />}
         {tab === 'errors' && <Errors projectId={id} state={state} canEdit={canEdit} />}
         {tab === 'goals' && <Goals projectId={id} state={state} canEdit={canEdit} />}

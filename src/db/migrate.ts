@@ -28,6 +28,7 @@ export async function runMigrations(sql: Sql): Promise<void> {
       ['partition-events', convertEventsToPartitioned],
       ['ensure-partitions', (s) => ensurePartitions(s)],
       ['backfill-project-defaults', backfillProjectDefaults],
+      ['create-lead-tables', createLeadTables],
     ];
 
     for (const [name, run] of phases) {
@@ -515,6 +516,108 @@ async function createAnalyticsTables(sql: Sql): Promise<void> {
       sealed BOOLEAN DEFAULT FALSE NOT NULL,
       PRIMARY KEY (project_id, day)
     );
+  `);
+}
+
+async function createLeadTables(sql: Sql): Promise<void> {
+  // One row per person per project. Phone (normalised with country code) is the
+  // identity; email is the fallback for leads that never gave a number.
+  await sql.unsafe(`
+    CREATE TABLE IF NOT EXISTS leads (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      project_id VARCHAR(24) NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+      phone VARCHAR(16),
+      email VARCHAR(255),
+      name VARCHAR(120),
+      business_name VARCHAR(200),
+      business_type VARCHAR(80),
+      city VARCHAR(80),
+      address VARCHAR(500),
+      website VARCHAR(500),
+      message TEXT,
+      source VARCHAR(40) NOT NULL,
+      sources TEXT[] DEFAULT '{}' NOT NULL,
+      refs TEXT[] DEFAULT '{}' NOT NULL,
+      status VARCHAR(16) DEFAULT 'new' NOT NULL,
+      score INTEGER DEFAULT 0 NOT NULL,
+      touches INTEGER DEFAULT 1 NOT NULL,
+      notes TEXT,
+      channel VARCHAR(32),
+      referrer_source VARCHAR(120),
+      landing_path VARCHAR(1024),
+      utm_source VARCHAR(120),
+      utm_medium VARCHAR(120),
+      utm_campaign VARCHAR(120),
+      session_id VARCHAR(40),
+      visitor_id VARCHAR(40),
+      attributes JSONB DEFAULT '{}'::jsonb NOT NULL,
+      first_seen_at TIMESTAMPTZ NOT NULL,
+      last_seen_at TIMESTAMPTZ NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+      updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_leads_project_phone ON leads(project_id, phone) WHERE phone IS NOT NULL;
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_leads_project_email ON leads(project_id, email) WHERE phone IS NULL AND email IS NOT NULL;
+    CREATE INDEX IF NOT EXISTS idx_leads_project_last_seen ON leads(project_id, last_seen_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_leads_project_status_score ON leads(project_id, status, score DESC);
+
+    CREATE TABLE IF NOT EXISTS lead_events (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      lead_id UUID NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
+      project_id VARCHAR(24) NOT NULL,
+      kind VARCHAR(16) NOT NULL,
+      source VARCHAR(40),
+      ref VARCHAR(120),
+      detail JSONB,
+      actor_id UUID REFERENCES users(id) ON DELETE SET NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_lead_events_lead ON lead_events(lead_id, created_at);
+
+    -- What to hunt for and where. Hunters (Harvey, the Maps scraper, the intent
+    -- search) read enabled plans with the project's write key and report runs back.
+    CREATE TABLE IF NOT EXISTS hunt_plans (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      project_id VARCHAR(24) NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+      name VARCHAR(120) NOT NULL,
+      enabled BOOLEAN DEFAULT TRUE NOT NULL,
+      hunters TEXT[] DEFAULT '{}' NOT NULL,
+      terms TEXT[] DEFAULT '{}' NOT NULL,
+      regions TEXT[] DEFAULT '{}' NOT NULL,
+      places TEXT[] DEFAULT '{}' NOT NULL,
+      country VARCHAR(2),
+      provider VARCHAR(40) DEFAULT 'osm' NOT NULL,
+      limit_per_query INTEGER DEFAULT 60 NOT NULL,
+      max_spend NUMERIC(10,2) DEFAULT 1 NOT NULL,
+      intent_queries TEXT[] DEFAULT '{}' NOT NULL,
+      intent_channels TEXT[] DEFAULT '{}' NOT NULL,
+      offers TEXT[] DEFAULT '{}' NOT NULL,
+      notes TEXT,
+      last_run_at TIMESTAMPTZ,
+      last_run JSONB,
+      created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+      updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_hunt_plans_project ON hunt_plans(project_id, enabled);
+
+    -- Jobs the dashboard queues for the agency PC (voice calls, hunts …). A local
+    -- runner claims them with the project's write key and reports back.
+    CREATE TABLE IF NOT EXISTS agency_jobs (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      project_id VARCHAR(24) NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+      kind VARCHAR(40) NOT NULL,
+      params JSONB DEFAULT '{}'::jsonb NOT NULL,
+      status VARCHAR(16) DEFAULT 'queued' NOT NULL,
+      requested_by UUID REFERENCES users(id) ON DELETE SET NULL,
+      runner VARCHAR(80),
+      result JSONB,
+      log TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+      started_at TIMESTAMPTZ,
+      finished_at TIMESTAMPTZ
+    );
+    CREATE INDEX IF NOT EXISTS idx_agency_jobs_queue ON agency_jobs(project_id, status, created_at);
   `);
 }
 

@@ -5,6 +5,7 @@ import Landing from './pages/Landing';
 import Auth from './pages/Auth';
 import Projects from './pages/Projects';
 import Dashboard from './pages/Dashboard';
+import CreateProject from './pages/CreateProject';
 import Admin from './pages/Admin';
 import Share from './pages/Share';
 
@@ -48,6 +49,9 @@ export default function App() {
       <Route path="/login" element={user ? <Navigate to="/projects" /> : <Auth mode="login" onAuth={handleAuth} />} />
       <Route path="/signup" element={user ? <Navigate to="/projects" /> : <Auth mode="signup" onAuth={handleAuth} />} />
       <Route path="/projects" element={user ? <Projects user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} />
+      <Route path="/dashboard/:id" element={user ? <Dashboard user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} />
+      <Route path="/create-project" element={user ? <CreateProject user={user} /> : <Navigate to="/login" />} />
+      <Route path="/admin" element={user?.role === 'admin' ? <Admin onLogout={handleLogout} /> : <Navigate to="/" />} />
       <Route path="/dashboard/:id" element={user ? <Dashboard user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} />
       <Route path="/admin" element={user?.role === 'admin' ? <Admin onLogout={handleLogout} /> : <Navigate to="/" />} />
     </Routes>

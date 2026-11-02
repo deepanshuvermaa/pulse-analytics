@@ -18,6 +18,10 @@ import alertsRouter from './routes/alerts.js';
 import share from './routes/share.js';
 import admin from './routes/admin.js';
 import suggestions from './routes/suggestions.js';
+import leads from './routes/leads.js';
+import hunts from './routes/hunts.js';
+import sites from './routes/sites.js';
+import agency from './routes/agency.js';
 import v1 from './routes/v1.js';
 import payments from './routes/payments.js';
 import mcpServer from './mcp/server.js';
@@ -37,9 +41,11 @@ app.use('*', logger());
 // and credential-free. Everything else is same-origin with credentials.
 app.use('/api/collect/*', cors({ origin: '*', credentials: false, allowMethods: ['POST', 'OPTIONS'] }));
 app.use('/api/collect', cors({ origin: '*', credentials: false, allowMethods: ['POST', 'OPTIONS'] }));
+// Lead forms post from customer sites too.
+app.use('/api/leads/capture', cors({ origin: '*', credentials: false, allowMethods: ['POST', 'OPTIONS'] }));
 
 app.use('/api/*', async (c, next) => {
-  if (c.req.path.startsWith('/api/collect')) return next();
+  if (c.req.path.startsWith('/api/collect') || c.req.path === '/api/leads/capture') return next();
   return cors({
     origin: env.IS_PROD ? env.CORS_ORIGIN : '*',
     credentials: true,
@@ -71,6 +77,10 @@ app.route('/api/suggestions', suggestions);
 app.use('/api/v1/*', cors({ origin: '*', credentials: false, allowMethods: ['GET', 'OPTIONS'] }));
 app.route('/api/v1', v1);
 app.route('/api/payments', payments);
+app.route('/api/leads', leads);
+app.route('/api/hunts', hunts);
+app.route('/api/sites', sites);
+app.route('/api/agency', agency);
 
 /**
  * Liveness. Deliberately dependency-free and always 200 while the process runs.
