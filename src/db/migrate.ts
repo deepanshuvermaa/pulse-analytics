@@ -29,6 +29,7 @@ export async function runMigrations(sql: Sql): Promise<void> {
       ['ensure-partitions', (s) => ensurePartitions(s)],
       ['backfill-project-defaults', backfillProjectDefaults],
       ['create-lead-tables', createLeadTables],
+      ['repair-double-encoded-payloads', repairDoubleEncodedPayloads],
     ];
 
     for (const [name, run] of phases) {
@@ -635,4 +636,22 @@ async function backfillProjectDefaults(sql: Sql): Promise<void> {
     ) s
     WHERE s.project_id = p.id;
   `);
+}
+
+/**
+ * Events used to be stored with their payload double-encoded (a JSON string
+ * holding JSON), so every payload->>'key' read returned NULL. Unwrap them once,
+ * then unseal the affected days so rollups recompute scroll, duration and vitals.
+ * A no-op on every later boot.
+ */
+async function repairDoubleEncodedPayloads(sql: Sql): Promise<void> {
+  const fixed = await sql.unsafe(`
+    UPDATE events SET payload = (payload #>> '{}')::jsonb
+    WHERE jsonb_typeof(payload) = 'string' AND LEFT(LTRIM(payload #>> '{}'), 1) IN ('{', '[')
+    RETURNING project_id
+  `);
+  if (!fixed.length) return;
+  const projectIds = [...new Set(fixed.map((r) => String(r.project_id)))];
+  await sql`UPDATE rollup_state SET sealed = FALSE WHERE project_id = ANY(${projectIds})`;
+  console.log(`[migrate] repaired ${fixed.length} double-encoded event payloads; affected days will rebuild`);
 }

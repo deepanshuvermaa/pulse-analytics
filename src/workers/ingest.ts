@@ -45,7 +45,10 @@ function toRow(e: QueuedEvent) {
     utmCampaign: e.utmCampaign,
     utmTerm: e.utmTerm,
     utmContent: e.utmContent,
-    payload: e.payload ?? null,
+    // Bound as text, then cast. Handing postgres-js a jsonb-typed parameter makes it
+    // JSON-encode the already-stringified value again, storing a JSON *string* that
+    // every payload->>'key' read (vitals, scroll depth, errors, duration) sees as NULL.
+    payload: e.payload == null ? null : sql`${JSON.stringify(e.payload)}::text::jsonb`,
     timestamp: new Date(e.timestamp),
   };
 }
