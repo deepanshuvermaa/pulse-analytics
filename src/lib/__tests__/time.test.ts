@@ -65,6 +65,8 @@ describe('timezone handling', () => {
     expect(normalizeTimezone('Mars/Olympus_Mons')).toBe('UTC');
     expect(normalizeTimezone(null)).toBe('UTC');
     expect(normalizeTimezone('Europe/Berlin')).toBe('Europe/Berlin');
+    expect(normalizeTimezone('Asia/Calcutta')).toBe('Asia/Kolkata');
+    expect(normalizeTimezone('Europe/Kiev')).toBe('Europe/Kyiv');
   });
 });
 

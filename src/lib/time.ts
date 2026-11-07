@@ -173,8 +173,26 @@ export function isValidTimezone(tz: string): boolean {
   }
 }
 
+// Legacy IANA names that Node still accepts but some Postgres builds reject in
+// AT TIME ZONE ("time zone not recognized"), which silently broke rollups.
+const TZ_ALIASES: Record<string, string> = {
+  'Asia/Calcutta': 'Asia/Kolkata',
+  'Asia/Katmandu': 'Asia/Kathmandu',
+  'Asia/Saigon': 'Asia/Ho_Chi_Minh',
+  'Asia/Rangoon': 'Asia/Yangon',
+  'Asia/Dacca': 'Asia/Dhaka',
+  'Asia/Thimbu': 'Asia/Thimphu',
+  'Asia/Ulan_Bator': 'Asia/Ulaanbaatar',
+  'Europe/Kiev': 'Europe/Kyiv',
+  'America/Buenos_Aires': 'America/Argentina/Buenos_Aires',
+  'Pacific/Truk': 'Pacific/Chuuk',
+  'Pacific/Ponape': 'Pacific/Pohnpei',
+  'Atlantic/Faeroe': 'Atlantic/Faroe',
+};
+
 export function normalizeTimezone(tz: string | null | undefined): string {
-  return tz && isValidTimezone(tz) ? tz : 'UTC';
+  const name = tz ? TZ_ALIASES[tz] ?? tz : tz;
+  return name && isValidTimezone(name) ? name : 'UTC';
 }
 
 // ─────────────────────────────────────────────────────────────

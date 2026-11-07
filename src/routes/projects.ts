@@ -8,7 +8,7 @@ import { nanoid } from 'nanoid';
 import bcrypt from 'bcryptjs';
 import { authMiddleware } from '../middleware/auth.js';
 import { requireProject } from '../middleware/project.js';
-import { isValidTimezone } from '../lib/time.js';
+import { isValidTimezone, normalizeTimezone } from '../lib/time.js';
 import { liveCounts } from '../lib/redis.js';
 import { invalidateProject } from '../lib/cache.js';
 import { invalidateProjectConfig } from './collect.js';
@@ -117,7 +117,7 @@ router.post('/', async (c) => {
     }
   }
 
-  const timezone = body.data.timezone && isValidTimezone(body.data.timezone) ? body.data.timezone : 'UTC';
+  const timezone = normalizeTimezone(body.data.timezone);
 
   const [project] = await db.insert(projects).values({
     id: nanoid(12),
@@ -166,7 +166,7 @@ router.patch('/:id', requireProject('admin'), async (c) => {
 
   if (body.data.timezone !== undefined) {
     if (!isValidTimezone(body.data.timezone)) return c.json({ error: 'Unknown IANA timezone' }, 400);
-    patch.timezone = body.data.timezone;
+    patch.timezone = normalizeTimezone(body.data.timezone);
   }
   if (body.data.clarityId !== undefined) patch.clarityId = body.data.clarityId || null;
 
