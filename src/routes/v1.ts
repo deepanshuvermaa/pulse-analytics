@@ -12,6 +12,7 @@ import {
 } from '../lib/reports.js';
 import { exitPages, exitReasons, flow, segmentLift, frustrationByPage, formAbandonment, retention } from '../lib/insights.js';
 import { buildDigest } from '../lib/digest.js';
+import { buildExport, exportToMarkdown, leadsReport, revenueReport } from '../lib/ai-export.js';
 import { computeFunnel } from '../lib/funnel-engine.js';
 import { funnels, goals, alerts } from '../db/schema.js';
 import type { Project } from '../lib/types.js';
@@ -91,6 +92,14 @@ v1.get('/', (c) => {
       '/v1/frustration': 'Rage clicks, dead clicks, errors and form abandonment by page.',
       '/v1/retention': 'Cohort retention matrix.',
       '/v1/funnels': 'Saved funnels, and /v1/funnels/:id for a computed report.',
+      '/v1/export': 'Everything in one bundle. format=md (default, readable report) or json. include=contacts adds lead names and phones.',
+      '/v1/leads': 'Lead inbox totals, by source/channel/status, and recent leads. include=contacts adds names and phones.',
+      '/v1/revenue': 'Revenue and conversions, with revenue by channel.',
+      '/v1/audience': 'Channels, sources, referrers, devices, browsers, OS and countries in one call.',
+      '/v1/goals': 'Configured goals.',
+      '/v1/alerts': 'Configured alerts.',
+      '/v1/live': 'Visitors on the site right now and the pages they are on.',
+      '/v1/heatmap?path=/x': 'Normalised click positions on one page.',
     },
     parameters: {
       preset: 'today | yesterday | last_7d | last_30d | last_90d | month_to_date | last_month | year_to_date | last_12mo | all_time | custom',
@@ -316,6 +325,43 @@ v1.get('/heatmap', async (c) => {
   }).filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y));
 
   return c.json({ range: rangeMeta(range), path, sample: points.length, points });
+});
+
+// ─────────────────────────────────────────────────────────────
+// Whole-project export and the lead inbox
+// ─────────────────────────────────────────────────────────────
+
+/** Contact details leave Pulse only when the caller asks for them explicitly. */
+const wantsContacts = (c: Context<V1Env>) => (c.req.query('include') || '').split(',').includes('contacts');
+
+/** Range for whole-project reads: last 30 days unless told otherwise. */
+function exportRange(c: Context<V1Env>) {
+  const project = c.get('project');
+  const q = c.req.query.bind(c.req);
+  return resolveRange(
+    { preset: q('preset') || 'last_30d', from: q('from'), to: q('to'), granularity: q('granularity'), compare: q('compare') || 'previous' },
+    project.timezone,
+  );
+}
+
+v1.get('/export', async (c) => {
+  const project = c.get('project');
+  const bundle = await buildExport(project, exportRange(c), { includeLeadContacts: wantsContacts(c) });
+  if (c.req.query('format') === 'json') return c.json(bundle);
+  return c.body(exportToMarkdown(bundle), 200, { 'Content-Type': 'text/markdown; charset=utf-8' });
+});
+
+v1.get('/leads', async (c) => {
+  const project = c.get('project');
+  const range = exportRange(c);
+  const limit = Math.min(Math.max(Number(c.req.query('limit')) || 100, 1), 500);
+  return c.json({ range: rangeMeta(range), ...(await leadsReport(project, range, { includeLeadContacts: wantsContacts(c) }, limit)) });
+});
+
+v1.get('/revenue', async (c) => {
+  const project = c.get('project');
+  const range = exportRange(c);
+  return c.json({ range: rangeMeta(range), ...(await revenueReport(project, range)) });
 });
 
 export default v1;

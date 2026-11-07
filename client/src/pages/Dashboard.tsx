@@ -5,6 +5,7 @@ import { api } from '../api';
 import { useAsync } from '../lib/useReport';
 import { useQueryState } from '../lib/query-state';
 import { DateRangePicker, FilterBar } from '../components/RangeControls';
+import { AiExportMenu } from '../components/AiExportMenu';
 import { ErrorNote, Spinner } from '../components/ui';
 import Overview from '../components/tabs/Overview';
 import Behaviour from '../components/tabs/Behaviour';
@@ -85,6 +86,14 @@ export default function Dashboard({ user, onLogout }: { user: any; onLogout: () 
             >
               <RefreshCw className="w-3.5 h-3.5" />
             </button>
+            <AiExportMenu
+              projectId={project.id}
+              state={state}
+              onConnect={() => {
+                setTab('settings');
+                setTimeout(() => document.getElementById('ai-access')?.scrollIntoView({ behavior: 'smooth' }), 150);
+              }}
+            />
             <DateRangePicker state={state} timezone={project.timezone} />
           </div>
         </div>

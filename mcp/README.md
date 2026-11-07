@@ -1,72 +1,93 @@
-# Pulse Analytics MCP server
+# Pulse Analytics for AI assistants
 
 Read-only access to one Pulse project from an AI assistant, so you can ask
-"what's broken on my site?" without opening the dashboard.
+"how did the site do this month, and which leads came from WhatsApp?" without
+opening the dashboard.
 
-## Setup
+There are three ways in, all read-only and scoped to one project.
 
-1. In Pulse, open your project → **Setup** → **API keys & AI access** → create a key.
-   The key is shown once; copy it.
+## 1. Export for AI (no setup)
 
-2. Add the server to your assistant's MCP config.
+In the dashboard, pick a period and click **Export for AI**:
 
-   **Claude Desktop** (`claude_desktop_config.json`):
+- **Copy report for AI** — a Markdown report on the clipboard. Paste it into
+  ChatGPT, Claude or Gemini and ask anything.
+- **Download report (.md)** — the same report as a file.
+- **Download full data (.json)** — every report as structured data.
 
-   ```json
-   {
-     "mcpServers": {
-       "pulse": {
-         "command": "npx",
-         "args": ["-y", "pulse-analytics-mcp"],
-         "env": {
-           "PULSE_HOST": "https://your-pulse-host",
-           "PULSE_API_KEY": "pk_your_key_here"
+The report covers headline numbers and what changed, Pulse's findings, leads,
+traffic over time, pages, exits, sources and campaigns, devices and countries,
+custom events, Core Web Vitals, frustration, retention, JavaScript errors,
+goals, funnels and revenue. Dashboard downloads include lead contact details.
+
+## 2. Live connector (MCP)
+
+Pulse hosts its own MCP server at `/mcp`. Nothing to install.
+
+1. Project → **Setup** → **API keys & AI access** → create a key. It is shown once.
+2. Connector URL: `https://your-pulse-host/mcp?key=pk_your_key`
+   - **Claude** (web or desktop): Settings → Connectors → Add custom connector → paste the URL.
+   - **ChatGPT, Cursor, other MCP clients**: add it as a remote / streamable-HTTP MCP server.
+   - **Claude Desktop config file**:
+
+     ```json
+     {
+       "mcpServers": {
+         "pulse": {
+           "command": "npx",
+           "args": ["-y", "mcp-remote", "https://your-pulse-host/mcp?key=pk_your_key"]
          }
        }
      }
-   }
-   ```
+     ```
 
-3. Restart the assistant. Ask it something like:
-   - "How is my site doing this week compared to last?"
-   - "Which page loses the most visitors, and why?"
-   - "Did conversion drop on mobile?"
+   Clients that can send headers may use `Authorization: Bearer pk_…` instead of `?key=`.
 
-## Tools
+### Tools
 
 | Tool | Use it for |
 |---|---|
-| `get_insights` | **Start here.** What's working, what isn't, with evidence and a narrative. |
-| `get_summary` | Visitors, pageviews, bounce rate, conversions. |
-| `get_timeseries` | Trend over time. |
-| `get_pages` | Per-page views, time, bounce and exit rates. |
-| `get_exit_pages` | Where people leave. |
-| `explain_exits` | **Why** they left a given page, plus which segments over-index. |
-| `get_user_flow` | Journey graph, forwards or backwards from a page. |
-| `get_breakdown` | Group by source, channel, country, device, campaign… |
-| `get_errors` | Grouped JavaScript errors. |
-| `get_performance` | Core Web Vitals percentiles, slowest pages. |
-| `get_frustration` | Rage clicks, dead clicks, form abandonment by field. |
-| `get_retention` | Cohort retention. |
-| `get_custom_events` | Your own tracked events. |
-| `list_funnels` / `get_funnel` | Funnel conversion and drop-off, optionally by segment. |
+| `pulse_export` | **Start here** for broad questions: the whole project in one report. |
+| `pulse_insights` | Short diagnosis: what's working, what isn't, with evidence. |
+| `pulse_overview` | Headline metrics with change vs a comparison period. |
+| `pulse_timeseries` | Trend over time. |
+| `pulse_pages` / `pulse_exits` | Per-page performance; where people leave. |
+| `pulse_exit_reasons` | Why visitors left one page, and which segments over-index. |
+| `pulse_flow` | Journey graph, forwards or backwards from a page. |
+| `pulse_audience` / `pulse_breakdown` | Sources, channels, campaigns, devices, countries… |
+| `pulse_leads` | Lead inbox: totals, by source/channel/status, recent leads. |
+| `pulse_events` | Custom events (button clicks, sign-ups). |
+| `pulse_performance` | Core Web Vitals and slowest pages. |
+| `pulse_frustration` | Rage clicks, dead clicks, abandoned form fields. |
+| `pulse_retention` | Cohort retention. |
+| `pulse_errors` | Unresolved JavaScript errors. |
+| `pulse_funnels` / `pulse_funnel_report` | Funnel conversion and drop-off. |
+| `pulse_goals` / `pulse_alerts` | Configured goals and alerts. |
+| `pulse_revenue` | Revenue and conversions by channel. |
+| `pulse_live` | Visitors on the site right now. |
+| `pulse_heatmap` | Click positions on one page. |
 
-Every tool accepts `preset` (`today`, `last_7d`, `last_30d`, `all_time`, …) or a
-custom `from`/`to`, and `compare` for period-over-period change. Dates are
-calendar days in the project's configured timezone.
+Period tools accept `preset` (`today`, `last_7d`, `last_30d`, `all_time`, …) or
+`from`/`to` with `preset=custom`, plus `compare` (`previous`, `year_over_year`).
+Dates are calendar days in the project's timezone.
 
-## Security
+Lead names, phones and emails are only returned when a tool is called with
+`include_contacts: true`.
 
-The key is **read-only and scoped to a single project**. It cannot send events,
-change settings, or read any other project — enforced server-side, not here.
-Only a hash of the key is stored, so a leaked database yields nothing usable.
-Revoke a key at any time from the same settings panel; it stops working immediately.
+## 3. Plain HTTP
 
-## Without MCP
-
-The same data is available over plain HTTP. The API describes itself:
+The API describes itself:
 
 ```bash
 curl -H "Authorization: Bearer pk_your_key" https://your-pulse-host/api/v1/
-curl -H "Authorization: Bearer pk_your_key" https://your-pulse-host/api/v1/insights
+curl -H "Authorization: Bearer pk_your_key" "https://your-pulse-host/api/v1/export?preset=last_30d"
+curl -H "Authorization: Bearer pk_your_key" "https://your-pulse-host/api/v1/export?format=json&include=contacts"
 ```
+
+## Security
+
+A key is **read-only and scoped to a single project**. It cannot send events,
+change settings, or read any other project — enforced server-side. Only a hash
+of the key is stored. Revoke a key from the same settings panel; it stops working
+immediately. A key in a connector URL is a secret: anyone with the URL can read
+that project's analytics until the key is revoked.

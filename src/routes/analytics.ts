@@ -16,6 +16,7 @@ import {
   frustrationByPage, formAbandonment,
 } from '../lib/insights.js';
 import type { AppEnv, Project } from '../lib/types.js';
+import { buildExport, exportToMarkdown } from '../lib/ai-export.js';
 
 const analytics = new Hono<AppEnv>();
 analytics.use('*', authMiddleware);
@@ -441,6 +442,33 @@ analytics.get('/:projectId/export', async (c) => {
       'Content-Type': 'text/csv; charset=utf-8',
       'Content-Disposition': `attachment; filename="${filename}.csv"`,
     },
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+// "Export for AI" — the whole project in one file
+// ─────────────────────────────────────────────────────────────
+
+analytics.get('/:projectId/ai-export', async (c) => {
+  const project = c.get('project');
+  const q = c.req.query.bind(c.req);
+  const range = resolveRange(
+    { preset: q('preset') || 'last_30d', from: q('from'), to: q('to'), granularity: q('granularity'), compare: q('compare') || 'previous' },
+    project.timezone,
+  );
+  const base = `${project.name.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}-pulse-${range.fromDate}-to-${range.toDate}`;
+
+  // Signed-in members already see every lead in the inbox, so the download includes them.
+  const bundle = await buildExport(project, range, { includeLeadContacts: q('contacts') !== '0' });
+  if (q('format') === 'json') {
+    return c.body(JSON.stringify(bundle, null, 2), 200, {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Content-Disposition': `attachment; filename="${base}.json"`,
+    });
+  }
+  return c.body(exportToMarkdown(bundle), 200, {
+    'Content-Type': 'text/markdown; charset=utf-8',
+    ...(q('download') === '0' ? {} : { 'Content-Disposition': `attachment; filename="${base}.md"` }),
   });
 });
 

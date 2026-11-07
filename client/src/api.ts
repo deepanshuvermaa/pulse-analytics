@@ -42,6 +42,16 @@ async function refreshTokens(): Promise<boolean> {
   return refreshInFlight;
 }
 
+/** Fetches an authenticated file and saves it under the server's filename. */
+async function saveDownload(path: string, fallbackName: string): Promise<void> {
+  const res = await request(path);
+  if (!res.ok) throw new Error(`Download failed (${res.status})`);
+  const name = /filename="([^"]+)"/.exec(res.headers.get('content-disposition') || '')?.[1] || fallbackName;
+  const url = URL.createObjectURL(await res.blob());
+  Object.assign(document.createElement('a'), { href: url, download: name }).click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 async function request(path: string, opts: RequestInit = {}): Promise<Response> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json', ...(opts.headers as Record<string, string>) };
   const token = getToken();
@@ -125,8 +135,18 @@ export const api = {
     json(`/analytics/${id}/errors/${fingerprint}/resolve?resolved=${resolved}`, { method: 'POST' }),
   heatmap: (id: string, path: string, q: Query = {}) =>
     json(`/analytics/${id}/heatmap${toQueryString({ ...q, path })}`),
-  exportUrl: (id: string, report: string, q: Query = {}) =>
-    `${API}/analytics/${id}/export${toQueryString({ ...q, report, format: 'csv' })}`,
+  /** One report as CSV. A plain link can't carry the bearer token, so fetch then save. */
+  downloadReport: (id: string, report: string, q: Query = {}) =>
+    saveDownload(`/analytics/${id}/export${toQueryString({ ...q, report, format: 'csv' })}`, `${report}.csv`),
+  /** Whole project for an AI: format "md" (readable report) or "json" (full data). */
+  downloadAiExport: (id: string, format: 'md' | 'json', q: Query = {}) =>
+    saveDownload(`/analytics/${id}/ai-export${toQueryString({ ...q, format })}`, `pulse-export.${format}`),
+  /** The same report as text, for pasting straight into an AI chat. */
+  aiExportText: async (id: string, q: Query = {}) => {
+    const res = await request(`/analytics/${id}/ai-export${toQueryString({ ...q, download: '0' })}`);
+    if (!res.ok) throw new Error(`Export failed (${res.status})`);
+    return res.text();
+  },
 
   // Goals
   getGoals: (id: string) => json(`/goals/${id}`),

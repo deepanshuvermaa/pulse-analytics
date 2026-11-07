@@ -405,7 +405,13 @@ function ApiKeys({ projectId }: { projectId: string }) {
     list.reload();
   }
 
+  const connectorUrl = (key: string) => `${window.location.origin}/mcp?key=${key}`;
+  const desktopConfig = (key: string) => JSON.stringify({
+    mcpServers: { pulse: { command: 'npx', args: ['-y', 'mcp-remote', connectorUrl(key)] } },
+  }, null, 2);
+
   return (
+    <div id="ai-access" className="scroll-mt-32">
     <Panel title="API keys & AI access">
       <div className="p-5 space-y-5">
         <p className="text-sm text-forest-muted">
@@ -438,6 +444,9 @@ function ApiKeys({ projectId }: { projectId: string }) {
               Copy this key now — it cannot be shown again.
             </p>
             <CopyBox value={created.plaintext} />
+            <CopyBox label="Connector URL — Claude (Settings → Connectors → Add custom connector), ChatGPT, Cursor" value={connectorUrl(created.plaintext)} />
+            <CopyBox label="Claude Desktop — claude_desktop_config.json" value={desktopConfig(created.plaintext)} />
+            <CopyBox label="Whole project as a report (any script or AI that can fetch a URL)" value={`${window.location.origin}/api/v1/export?api_key=${created.plaintext}`} />
             <CopyBox label="Try it" value={created.usage?.curl ?? ''} />
             <button onClick={() => setCreated(null)} className="text-xs text-forest-muted hover:text-forest underline">
               Done, hide it
@@ -479,20 +488,13 @@ function ApiKeys({ projectId }: { projectId: string }) {
         <div className="border-t border-meadow-100 pt-4 space-y-3">
           <h4 className="text-xs font-semibold text-forest-muted uppercase tracking-wide">Connect an AI assistant (MCP)</h4>
           <p className="text-xs text-forest-muted">
-            Add this to your Claude Desktop config, then ask it things like
-            "what's hurting conversion on my site this week?".
+            Pulse has a built-in connector with 23 read-only tools: traffic, pages, sources, leads, performance,
+            errors, funnels, revenue and a whole-project export. Create a key above, then paste the connector URL
+            into Claude (Settings → Connectors → Add custom connector), ChatGPT, Cursor or any MCP client, and ask
+            things like "how did the site do this month, and which leads came from WhatsApp?".
           </p>
-          <CopyBox
-            value={JSON.stringify({
-              mcpServers: {
-                pulse: {
-                  command: 'npx',
-                  args: ['-y', 'pulse-analytics-mcp'],
-                  env: { PULSE_HOST: host, PULSE_API_KEY: created?.plaintext ?? 'pk_your_key_here' },
-                },
-              },
-            }, null, 2)}
-          />
+          <CopyBox label="Connector URL" value={connectorUrl(created?.plaintext ?? 'pk_your_key_here')} />
+          <CopyBox label="Claude Desktop config" value={desktopConfig(created?.plaintext ?? 'pk_your_key_here')} />
           <p className="text-xs text-forest-muted">
             Prefer plain HTTP? Every endpoint is documented at{' '}
             <code className="bg-meadow-50 px-1.5 py-0.5 rounded">GET {host}/api/v1/</code> — call it with your key
@@ -501,6 +503,7 @@ function ApiKeys({ projectId }: { projectId: string }) {
         </div>
       </div>
     </Panel>
+    </div>
   );
 }
 

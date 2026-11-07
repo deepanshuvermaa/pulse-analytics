@@ -10,7 +10,7 @@
 import { Hono } from 'hono';
 import type { Context } from 'hono';
 import { resolveApiKey } from '../lib/api-keys.js';
-import { MCP_TOOLS, SERVER_INFO } from './tools.js';
+import { MCP_TOOLS, SERVER_INFO, toolRoute } from './tools.js';
 
 type JsonRpcId = string | number | null;
 interface JsonRpcRequest {
@@ -67,6 +67,21 @@ mcpServer.post('/', async (c: Context) => {
   }
 });
 
+/**
+ * The project API key, from wherever the client can put it: Authorization
+ * header, x-pulse-key header, ?key= on the connector URL (for apps that only
+ * accept a URL), or an api_key tool argument.
+ */
+function apiKeyFrom(c: Context, args: Record<string, unknown>): string {
+  const auth = c.req.header('authorization') || '';
+  return (
+    (auth.startsWith('Bearer ') ? auth.slice(7).trim() : '') ||
+    c.req.header('x-pulse-key') ||
+    c.req.query('key') ||
+    (typeof args.api_key === 'string' ? args.api_key : '')
+  ).trim();
+}
+
 async function runTool(
   c: Context,
   params: Record<string, unknown>,
@@ -75,52 +90,31 @@ async function runTool(
   fail: (code: number, message: string) => Response,
 ): Promise<Response> {
   const name = String(params.name ?? '');
-  const tool = MCP_TOOLS.find((t) => t.name === name);
-  if (!tool) return fail(-32602, `Unknown tool: ${name}`);
-
   const args = (params.arguments ?? {}) as Record<string, unknown>;
-  const key = String(args.api_key ?? c.req.header('x-pulse-key') ?? '');
-  if (!key) return fail(-32004, 'Provide api_key in tool arguments.');
+  const route = toolRoute(name, args);
+  if (!route) return fail(-32602, `Unknown tool: ${name}`);
+
+  const key = apiKeyFrom(c, args);
+  if (!key) return fail(-32004, 'Missing API key. Add ?key=pk_… to the connector URL or send Authorization: Bearer pk_….');
   const resolved = await resolveApiKey(key).catch(() => null);
   if (!resolved) return fail(-32004, 'Invalid or revoked API key.');
 
-  const result = await callV1(tool.name, args, resolved.project.id, c);
-  return ok({
-    content: [{ type: 'text', text: typeof result === 'string' ? result : JSON.stringify(result, null, 2) }],
-  });
-}
-
-async function callV1(tool: string, args: Record<string, unknown>, projectId: string, c: Context): Promise<unknown> {
-  const preset = String(args.preset ?? 'last_7d');
-  const compare = args.compare === 'previous' || args.compare === 'year_over_year' ? String(args.compare) : undefined;
-  const base = new URLSearchParams({ project: projectId, preset, ...(compare ? { compare } : {}) }).toString();
-
-  switch (tool) {
-    case 'pulse_overview':     return hit(`/v1/summary?${base}`, c);
-    case 'pulse_timeseries':   return hit(`/v1/timeseries?${base}&granularity=${args.granularity ?? 'day'}`, c);
-    case 'pulse_pages':        return hit(`/v1/pages?${base}&limit=${args.limit ?? 50}`, c);
-    case 'pulse_breakdown':    return hit(`/v1/breakdown/${args.dimension}?${base}&limit=${args.limit ?? 25}`, c);
-    case 'pulse_insights':     return hit(`/v1/insights?${base}`, c);
-    case 'pulse_funnels':      return hit(`/v1/funnels?${base}`, c);
-    case 'pulse_funnel_report':return hit(`/v1/funnels/${args.funnel_id}?${base}`, c);
-    case 'pulse_goals':        return hit(`/v1/goals?${base}`, c);
-    case 'pulse_alerts':       return hit(`/v1/alerts?${base}`, c);
-    case 'pulse_events':       return hit(`/v1/events?${base}`, c);
-    case 'pulse_live':         return hit(`/v1/live?${base}`, c);
-    case 'pulse_revenue':      return hit(`/payments/${projectId}/overview?preset=${preset}`, c);
-    default: throw new Error(`Unhandled tool: ${tool}`);
+  const res = await callV1(route, key, c);
+  const text = await res.text();
+  if (!res.ok) {
+    return ok({ isError: true, content: [{ type: 'text', text: `Pulse returned ${res.status}: ${text.slice(0, 500)}` }] });
   }
+  // Markdown (export) passes through as-is; JSON is pretty-printed for the model.
+  const body = (res.headers.get('content-type') || '').includes('json') ? JSON.stringify(JSON.parse(text), null, 2) : text;
+  return ok({ content: [{ type: 'text', text: body }] });
 }
 
-/** Walk the in-process Hono router by reconstructing a synthetic request. */
-async function hit(path: string, c: Context): Promise<unknown> {
-  const url = new URL(path, c.req.url);
-  const fetcher = (globalThis as { __pulseApp?: { fetch: (r: Request) => Promise<Response> } }).__pulseApp;
-  const res = fetcher
-    ? await fetcher.fetch(new Request(url.toString(), { method: 'GET' }))
-    : await fetch(url.toString(), { method: 'GET' });
-  if (!res.ok) throw new Error(`Upstream ${res.status}: ${await res.text()}`);
-  return res.json();
+/** Runs the request against the in-process app, so it needs no network hop. */
+async function callV1(route: string, key: string, c: Context): Promise<Response> {
+  const url = new URL(`/api/v1${route}`, c.req.url);
+  const req = new Request(url.toString(), { method: 'GET', headers: { authorization: `Bearer ${key}` } });
+  const app = (globalThis as { __pulseApp?: { fetch: (r: Request) => Promise<Response> | Response } }).__pulseApp;
+  return app ? await app.fetch(req) : await fetch(req);
 }
 
 export default mcpServer;

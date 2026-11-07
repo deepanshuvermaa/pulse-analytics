@@ -7,13 +7,13 @@ import { Panel, EmptyState, ErrorNote, DataTable, Spinner, BarRow, StatCard, Pil
 
 function ExportButton({ projectId, report, query }: { projectId: string; report: string; query: any }) {
   return (
-    <a
-      href={api.exportUrl(projectId, report, query)}
+    <button
+      onClick={() => void api.downloadReport(projectId, report, query).catch((e) => alert(e.message))}
       className="inline-flex items-center gap-1.5 text-xs font-medium text-forest-muted hover:text-forest"
       title="Download as CSV"
     >
       <Download className="w-3.5 h-3.5" /> CSV
-    </a>
+    </button>
   );
 }
 
